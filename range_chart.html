@@ -3,53 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>プリフロップレンジチャート v0.4 - AI補完</title>
+  <title>プリフロップレンジチャート v0.5 - ワイヤーフレーム版</title>
   <style>
     body {
-      font-family: system-ui, sans-serif;
-      background-color: #f4f6f8;
-      color: #333;
       margin: 0;
-      padding: 0;
+      font-family: system-ui, sans-serif;
+      background: #0f172a;
+      color: #fff;
     }
     header {
-      background: #1e3a8a;
-      color: white;
+      background: #1e293b;
       padding: 1rem;
+      font-size: 1.2rem;
       text-align: center;
-      font-size: 1.4rem;
+      font-weight: bold;
     }
-    main {
-      max-width: 1024px;
-      margin: 0 auto;
-      padding: 1rem;
-    }
-    .controls {
+    .topbar {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
       justify-content: center;
-    }
-    .controls > div {
-      display: flex;
-      flex-direction: column;
-      min-width: 130px;
-    }
-    label {
-      font-size: 0.9rem;
-      margin-bottom: 0.2rem;
-    }
-    select {
-      padding: 0.4rem;
-      font-size: 1rem;
-    }
-    .chart-container {
-      overflow-x: auto;
-      background: #fff;
+      gap: 1rem;
       padding: 1rem;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+    }
+    .topbar select {
+      background: #334155;
+      color: white;
+      border: 1px solid #475569;
+      padding: 0.4rem;
+      border-radius: 4px;
+      min-width: 100px;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      gap: 1rem;
+      padding: 1rem;
+      flex-wrap: wrap;
+    }
+    .grid {
+      flex: 1 1 640px;
+      overflow-x: auto;
+      background: #1e293b;
+      padding: 0.5rem;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     table {
       border-collapse: collapse;
@@ -61,160 +59,70 @@
       height: 48px;
       text-align: center;
       vertical-align: middle;
-      font-weight: bold;
       font-size: 0.8rem;
-      border: 1px solid #ccc;
-      position: relative;
+      font-weight: bold;
+      border: 1px solid #334155;
     }
-    td:hover {
-      transform: scale(1.2);
-      z-index: 10;
+    .cell-green { background: #22c55e; color: #000; }
+    .cell-red { background: #ef4444; color: #fff; }
+    .cell-blue { background: #3b82f6; color: #fff; }
+    .sidebar {
+      flex: 0 0 280px;
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 8px;
     }
-    .ev-popup {
-      display: none;
-      font-size: 0.85rem;
-      position: absolute;
-      background: rgba(255,255,255,0.95);
-      border-top: 1px solid #ccc;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 2px;
+    .sidebar h2 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
     }
-    td.show-ev .ev-popup {
-      display: block;
+    .action-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
     }
-    @media (max-width: 600px) {
-      .controls {
-        flex-direction: column;
-        align-items: stretch;
-      }
+    .action-card {
+      flex: 1;
+      background: #334155;
+      padding: 0.75rem;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
-  <header>プリフロップレンジチャート <span style="font-size: 0.9rem; opacity: 0.8;">v0.4</span> - AI補完</header>
-  <main>
-    <div class="controls">
-      <div><label for="action">アクション</label><select id="action"></select></div>
-      <div><label for="position">ポジション</label><select id="position"></select></div>
-      <div id="vsBox"><label for="vs">対戦相手</label><select id="vs"></select></div>
-      <div><label for="stack">スタックサイズ</label><select id="stack"></select></div>
-      <div><label for="type">スタイル</label><select id="type"></select></div>
+  <header>プリフロップレンジチャート v0.5 - ワイヤーフレーム版</header>
+  <div class="topbar">
+    <select><option>Open</option><option>3bet</option><option>Call</option></select>
+    <select><option>UTG</option><option>CO</option><option>BTN</option><option>BB</option></select>
+    <select><option>vs BB</option><option>vs CO</option><option>vs BTN</option></select>
+    <select><option>10BB</option><option>25BB</option><option>50BB</option><option>100BB</option></select>
+    <select><option>標準</option><option>tight</option><option>loose</option></select>
+  </div>
+  <div class="container">
+    <div class="grid">
+      <table>
+        <tbody>
+          <!-- 横13×縦13のサンプル -->
+          " + Array.from({ length: 13 }).map((_, i) => {
+            return "<tr>" + Array.from({ length: 13 }).map((_, j) => {
+              const label = String.fromCharCode(65 + i) + String.fromCharCode(65 + j);
+              const cls = j < i ? 'cell-blue' : j === i ? 'cell-red' : 'cell-green';
+              return `<td class='${cls}'>${label}</td>`;
+            }).join('') + "</tr>";
+          }).join('') + "
+        </tbody>
+      </table>
     </div>
-    <div class="chart-container">
-      <div id="chart"></div>
+    <div class="sidebar">
+      <h2>詳細情報</h2>
+      <div class="action-bar">
+        <div class="action-card">Fold<br>61.7%</div>
+        <div class="action-card">Call<br>28.9%</div>
+        <div class="action-card">Raise<br>9.3%</div>
+      </div>
     </div>
-  </main>
-  <script>
-    const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
-    let rangeData = {}, evData = {};
-    const actionSelect = document.getElementById("action");
-    const positionSelect = document.getElementById("position");
-    const vsSelect = document.getElementById("vs");
-    const stackSelect = document.getElementById("stack");
-    const typeSelect = document.getElementById("type");
-
-    async function loadData() {
-      try {
-        rangeData = await fetch("range_data_ai.json").then(r => r.json());
-        evData = await fetch("ev_data_ai.json").then(r => r.json());
-        const actions = Object.keys(rangeData);
-        actionSelect.innerHTML = actions.map(a => `<option value="${a}">${a}</option>`).join('');
-        updatePosition();
-      } catch (e) {
-        alert("データ読み込みに失敗しました");
-      }
-    }
-
-    function updatePosition() {
-      const action = actionSelect.value;
-      const positions = Object.keys(rangeData[action] || {});
-      positionSelect.innerHTML = positions.map(p => `<option value="${p}">${p}</option>`).join('');
-      updateVsStackType();
-    }
-
-    function updateVsStackType() {
-      const action = actionSelect.value;
-      const position = positionSelect.value;
-      const vsKeys = Object.keys(rangeData[action]?.[position] || {});
-      const vsDefault = vsKeys.length === 1 && vsKeys[0] === "default";
-      document.getElementById("vsBox").style.display = vsDefault ? "none" : "flex";
-
-      vsSelect.innerHTML = vsKeys.map(v => `<option value="${v}">${v}</option>`).join('');
-      const vs = vsDefault ? "default" : vsSelect.value || vsKeys[0];
-      const stacks = Object.keys(rangeData[action][position][vs] || {});
-      stackSelect.innerHTML = stacks.sort((a,b)=>a-b).map(s => `<option value="${s}">${s}BB</option>`).join('');
-      const types = rangeData[action][position][vs][stackSelect.value];
-      const typeKeys = Array.isArray(types) ? ["default"] : Object.keys(types);
-      typeSelect.innerHTML = typeKeys.map(t => `<option value="${t}">${t === "default" ? "標準" : t}</option>`).join('');
-      draw();
-    }
-
-    function getMatrix() {
-      const action = actionSelect.value;
-      const position = positionSelect.value;
-      const vs = document.getElementById("vsBox").style.display === "none" ? "default" : vsSelect.value;
-      const stack = stackSelect.value;
-      const type = typeSelect.value;
-      const data = rangeData?.[action]?.[position]?.[vs]?.[stack];
-      const raw = Array.isArray(data) ? data : data?.[type] || [];
-      const map = {};
-      for (let row of raw) {
-        for (let cell of row) {
-          if (!cell) continue;
-          const [hand, pct] = cell.split(":");
-          map[hand.trim()] = Math.round(parseInt(pct) / 10) / 10;
-        }
-      }
-      return ranks.map((r1, i) => ranks.map((r2, j) => {
-        const key = i === j ? r1 + r2 : (i < j ? r1 + r2 + "s" : r2 + r1 + "o");
-        return map[key] ?? "";
-      }));
-    }
-
-    function getCellStyle(value) {
-      if (typeof value !== "number") return '';
-      const hue = 120 * value;
-      const lightness = 95 - value * 40;
-      return `background:hsl(${hue},75%,${lightness}%);color:#000;`;
-    }
-
-    function draw() {
-      const matrix = getMatrix();
-      let html = "<table><tbody>";
-      for (let row = 0; row < 13; row++) {
-        html += "<tr>";
-        for (let col = 0; col < 13; col++) {
-          const r1 = ranks[row], r2 = ranks[col];
-          const hand = row === col ? r1 + r2 : (row < col ? r1 + r2 + "s" : r2 + r1 + "o");
-          const value = matrix[row][col];
-          const ev = evData?.[hand];
-          const evInfo = ev ? `EV: ${ev.ev.toFixed(2)}<br>勝率: ${ev.winRate.toFixed(1)}%<br>${ev.note ?? ''}` : "";
-          html += `<td style="${getCellStyle(value)}">${hand}<div class='ev-popup'>${evInfo}</div></td>`;
-        }
-        html += "</tr>";
-      }
-      html += "</tbody></table>";
-      document.getElementById("chart").innerHTML = html;
-    }
-
-    actionSelect.onchange = updatePosition;
-    positionSelect.onchange = updateVsStackType;
-    vsSelect.onchange = updateVsStackType;
-    stackSelect.onchange = updateVsStackType;
-    typeSelect.onchange = draw;
-
-    document.addEventListener("click", e => {
-      const td = e.target.closest("td");
-      if (td && td.querySelector(".ev-popup")) {
-        td.classList.toggle("show-ev");
-      } else {
-        document.querySelectorAll("td.show-ev").forEach(cell => cell.classList.remove("show-ev"));
-      }
-    });
-
-    loadData();
-  </script>
+  </div>
 </body>
 </html>
