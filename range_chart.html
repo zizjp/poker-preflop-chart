@@ -178,7 +178,7 @@
   if (typeof value !== "number") return '';
   const hue = 120 * value; // 0=赤〜120=緑
   const lightness = 90 - value * 30; // 薄い色→濃い色
-  const textColor = value > 0.6 ? '#fff' : '#000';
+  const textColor = '#000';
   return `background: hsl(${hue}, 70%, ${lightness}%); color: ${textColor};`;
 
 }
