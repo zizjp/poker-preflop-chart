@@ -106,20 +106,23 @@
     }
 
     function convertHandMatrix(rawMatrix) {
-      const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
-      const map = {};
-      for (let row of rawMatrix) {
-        for (let cell of row) {
-          if (!cell) continue;
-          const [hand, pct] = cell.split(":");
-          map[hand] = Math.round(parseInt(pct) / 10) / 10;
-        }
-      }
-      return ranks.map((r1, i) => ranks.map((r2, j) => {
-        let key = i === j ? r1 + r2 : (i < j ? r1 + r2 + "s" : r2 + r1 + "o");
-        return map[key] ?? "";
-      }));
+  const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const map = {};
+  for (let row of rawMatrix) {
+    for (let cell of row) {
+      if (!cell) continue;
+      const [hand, pct] = cell.split(":");
+      map[hand.trim()] = Math.round(parseInt(pct) / 10) / 10;
     }
+  }
+  return ranks.map((r1, i) => ranks.map((r2, j) => {
+    const suited = r1 + r2 + "s";
+    const offsuit = r2 + r1 + "o";
+    const pair = r1 + r2;
+    const key = i === j ? pair : (i < j ? suited : offsuit);
+    return map[key] !== undefined ? map[key] : "";
+  }));
+}
 
     function populateSelectors() {
       const actions = Object.keys(rangeData);
@@ -162,24 +165,33 @@
       return convertHandMatrix(raw);
     }
 
-    function updateChart() {
-      const matrix = getMatrix();
-      const showEV = toggleEV.checked;
-      const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
-      let html = "<table><tbody>";
-      for (let row = 0; row < 13; row++) {
-        html += "<tr>";
-        for (let col = 0; col < 13; col++) {
-          const r1 = ranks[row], r2 = ranks[col];
-          const hand = row === col ? r1 + r2 : (row < col ? r1 + r2 + "s" : r2 + r1 + "o");
-          const value = matrix[row][col];
-          const evInfo = evData?.[hand] ? `EV: ${evData[hand].ev.toFixed(2)}<br>勝率: ${evData[hand].winRate.toFixed(1)}%` : "";
-          html += `<td data-value="${value}" class="${showEV ? 'show-ev' : ''}">${hand}<div class='ev-popup'>${evInfo}</div></td>`;
-        }
-        html += "</tr>";
-      }
-      html += "</tbody></table>";
-      document.getElementById("chart").innerHTML = html;
+    function getCellStyle(value) {
+  if (typeof value !== "number") return '';
+  const hue = 120 * value; // 0=赤〜120=緑
+  const lightness = 90 - value * 30; // 薄い色→濃い色
+  const textColor = value > 0.6 ? '#fff' : '#000';
+  return `background: hsl(${hue}, 70%, ${lightness}%); color: ${textColor};`;
+
+}
+
+function updateChart() {
+  const matrix = getMatrix();
+  const showEV = toggleEV.checked;
+  const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  let html = "<table><tbody>";
+  for (let row = 0; row < 13; row++) {
+    html += "<tr>";
+    for (let col = 0; col < 13; col++) {
+      const r1 = ranks[row], r2 = ranks[col];
+      const hand = row === col ? r1 + r2 : (row < col ? r1 + r2 + "s" : r2 + r1 + "o");
+      const value = matrix[row][col];
+      const evInfo = evData?.[hand] ? `EV: ${evData[hand].ev.toFixed(2)}<br>勝率: ${evData[hand].winRate.toFixed(1)}%` : "";
+      html += `<td style="${getCellStyle(value)}" class="${showEV ? 'show-ev' : ''}">${hand}<div class='ev-popup'>${evInfo}</div></td>`;
+    }
+    html += "</tr>";
+  }
+  html += "</tbody></table>";
+  document.getElementById("chart").innerHTML = html;
     }
 
     const actionSelect = document.getElementById("action");
