@@ -2,67 +2,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>ポーカー戦略チャート（初心者向け）</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-            margin: 20px;
-            background: #f9f9f9;
-        }
-        h2 {
-            text-align: center;
-        }
-        .tab {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        .tab button {
-            background-color: #e0e0e0;
-            border: none;
-            outline: none;
-            cursor: pointer;
-            padding: 10px 16px;
-            margin: 5px;
-            font-size: 16px;
-            border-radius: 8px;
-            transition: background-color 0.3s;
-        }
-        .tab button:hover {
-            background-color: #d0d0d0;
-        }
-        .tab button.active {
-            background-color: #2196F3;
-            color: white;
-        }
-        .chart-section {
-            display: none;
-        }
-        .chart-section.active {
-            display: block;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            overflow-x: auto;
-            background-color: white;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 5px;
-            text-align: center;
-            font-size: 14px;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .table-wrapper {
-            overflow-x: auto;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>プリフロップチャート（初心者向け）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      margin: 20px;
+      background: #f9f9f9;
+    }
+    h2 {
+      text-align: center;
+    }
+    .tab {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .tab button {
+      background-color: #e0e0e0;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 10px 16px;
+      margin: 5px;
+      font-size: 16px;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+    }
+    .tab button:hover {
+      background-color: #d0d0d0;
+    }
+    .tab button.active {
+      background-color: #2196F3;
+      color: white;
+    }
+    .chart-section {
+      display: none;
+    }
+    .chart-section.active {
+      display: block;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background-color: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+      font-size: 14px;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+  </style>
 </head>
 <body>
 
@@ -70,6 +69,10 @@
 
 <div class="tab">
 <button class="tablink" onclick="showChart('UTG')">UTG（オープン）</button><button class="tablink" onclick="showChart('HJ')">HJ（オープン）</button><button class="tablink" onclick="showChart('CO')">CO（オープン）</button><button class="tablink" onclick="showChart('BTN')">BTN（オープン）</button><button class="tablink" onclick="showChart('SB')">SB（オープン）</button><button class="tablink" onclick="showChart('BB')">BB（ディフェンス）</button></div><div id="UTG" class="chart-section"><div class="table-wrapper"><h3>UTG</h3><table><tr><td></td><td>A</td><td>K</td><td>Q</td><td>J</td><td>T</td><td>9</td><td>8</td><td>7</td><td>6</td><td>5</td><td>4</td><td>3</td><td>2</td></tr><tr><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th></tr><tr><td>A</td><td>AA</td><td>AKs</td><td>AQs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>K</td><td>AKo</td><td>KK</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>Q</td><td></td><td></td><td>QQ</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>J</td><td></td><td></td><td></td><td>JJ</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>T</td><td></td><td></td><td></td><td></td><td>TT</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></div></div><div id="HJ" class="chart-section"><div class="table-wrapper"><h3>HJ</h3><table><tr><td></td><td>A</td><td>K</td><td>Q</td><td>J</td><td>T</td><td>9</td><td>8</td><td>7</td><td>6</td><td>5</td><td>4</td><td>3</td><td>2</td></tr><tr><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th></tr><tr><td>A</td><td>AA</td><td>AKs</td><td>AQs</td><td>AJs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>K</td><td>AKo</td><td>KK</td><td>KQs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>Q</td><td>AQo</td><td></td><td>QQ</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>J</td><td></td><td></td><td></td><td>JJ</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>T</td><td></td><td></td><td></td><td></td><td>TT</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td>99</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></div></div><div id="CO" class="chart-section"><div class="table-wrapper"><h3>CO</h3><table><tr><td></td><td>A</td><td>K</td><td>Q</td><td>J</td><td>T</td><td>9</td><td>8</td><td>7</td><td>6</td><td>5</td><td>4</td><td>3</td><td>2</td></tr><tr><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th></tr><tr><td>A</td><td>AA</td><td>AKs</td><td>AQs</td><td>AJs</td><td>ATs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>K</td><td>AKo</td><td>KK</td><td>KQs</td><td>KJs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>Q</td><td>AQo</td><td></td><td>QQ</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>J</td><td>AJo</td><td></td><td></td><td>JJ</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>T</td><td></td><td></td><td></td><td></td><td>TT</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td>99</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td>88</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></div></div><div id="BTN" class="chart-section"><div class="table-wrapper"><h3>BTN</h3><table><tr><td></td><td>A</td><td>K</td><td>Q</td><td>J</td><td>T</td><td>9</td><td>8</td><td>7</td><td>6</td><td>5</td><td>4</td><td>3</td><td>2</td></tr><tr><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th></tr><tr><td>A</td><td>AA</td><td>AKs</td><td>AQs</td><td>AJs</td><td>ATs</td><td>A9s</td><td>A8s</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>K</td><td>AKo</td><td>KK</td><td>KQs</td><td>KJs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>Q</td><td>AQo</td><td>KQo</td><td>QQ</td><td>QJs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>J</td><td>AJo</td><td></td><td></td><td>JJ</td><td>JTs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>T</td><td></td><td></td><td></td><td></td><td>TT</td><td>T9s</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td>99</td><td>98s</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td>88</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>77</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>66</td><td></td><td></td><td></td><td></td></tr><tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></div></div><div id="SB" class="chart-section"><div class="table-wrapper"><h3>SB</h3><table><tr><td></td><td>A</td><td>K</td><td>Q</td><td>J</td><td>T</td><td>9</td><td>8</td><td>7</td><td>6</td><td>5</td><td>4</td><td>3</td><td>2</td></tr><tr><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th></tr><tr><td>A</td><td>AA</td><td>AKs</td><td>AQs</td><td>AJs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>K</td><td>AKo</td><td>KK</td><td>KQs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>Q</td><td>AQo</td><td></td><td>QQ</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>J</td><td></td><td></td><td></td><td>JJ</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>T</td><td></td><td></td><td></td><td></td><td>TT</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td>99</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td>88</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></div></div><div id="BB" class="chart-section"><div class="table-wrapper"><h3>BB</h3><table><tr><td></td><td>A</td><td>K</td><td>Q</td><td>J</td><td>T</td><td>9</td><td>8</td><td>7</td><td>6</td><td>5</td><td>4</td><td>3</td><td>2</td></tr><tr><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th><th>---</th></tr><tr><td>A</td><td>AA</td><td>AKs</td><td>AQs</td><td>AJs</td><td>ATs</td><td>A9s</td><td>A8s</td><td>A7s</td><td>A6s</td><td>A5s</td><td>A4s</td><td>A3s</td><td>A2s</td></tr><tr><td>K</td><td>AKo</td><td>KK</td><td>KQs</td><td>KJs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>Q</td><td>AQo</td><td>KQo</td><td>QQ</td><td>QJs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>J</td><td>AJo</td><td>KJo</td><td>QJo</td><td>JJ</td><td>JTs</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>T</td><td></td><td></td><td></td><td></td><td>TT</td><td>T9s</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>9</td><td></td><td></td><td></td><td></td><td></td><td>99</td><td>98s</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td><td>88</td><td>87s</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>77</td><td>76s</td><td></td><td></td><td></td><td></td></tr><tr><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>66</td><td>65s</td><td></td><td></td><td></td></tr><tr><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>55</td><td>54s</td><td></td><td></td></tr><tr><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>44</td><td></td><td></td></tr><tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>33</td><td></td></tr><tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>22</td></tr></table></div></div>
+<div style="text-align:center; margin-top: 30px;">
+  <a href="index.html" style="text-decoration:none; font-weight:bold;">← ホームに戻る</a>
+</div>
+
 <script>
 function showChart(position) {
     var sections = document.getElementsByClassName("chart-section");
