@@ -153,17 +153,26 @@
     }
 
     function getMatrix() {
-      const action = actionSelect.value;
-      const position = positionSelect.value;
-      const vsOptions = Object.keys(rangeData[action][position] || {});
-      const vs = vsOptions.length === 1 ? "default" : vsSelect.value;
-      const stack = stackSelect.value;
-      const type = typeSelect.value;
-      const raw = vs === "default"
-        ? rangeData[action][position][vs][stack][Object.keys(rangeData[action][position][vs][stack])[0]]
-        : rangeData[action][position][vs][stack][type];
-      return convertHandMatrix(raw);
-    }
+  const action = actionSelect.value;
+  const position = positionSelect.value;
+  const vsOptions = Object.keys(rangeData[action]?.[position] || {});
+  const vs = vsOptions.length === 1 ? vsOptions[0] : vsSelect.value;
+  const stack = stackSelect.value;
+
+  let raw = null;
+  const stackData = rangeData[action]?.[position]?.[vs]?.[stack];
+
+  if (!stackData) return Array(13).fill().map(() => Array(13).fill(""));
+
+  if (Array.isArray(stackData)) {
+    raw = stackData;
+  } else if (typeof stackData === 'object') {
+    const type = typeSelect?.value;
+    raw = stackData[type] || stackData[Object.keys(stackData)[0]];
+  }
+
+  return convertHandMatrix(raw);
+}
 
     function getCellStyle(value) {
   if (typeof value !== "number") return '';
