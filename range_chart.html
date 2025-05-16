@@ -1,214 +1,175 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ポーカー戦略チャート (完全版)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>プリフロップチャート（AI補完）</title>
   <style>
-    :root {
-      --bg-color: #f9f9f9;
-      --text-color: #333;
-      --table-bg: white;
-    }
-    body.dark {
-      --bg-color: #121212;
-      --text-color: #f0f0f0;
-      --table-bg: #1e1e1e;
-    }
     body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: sans-serif;
+      font-family: "Helvetica Neue", sans-serif;
       margin: 0;
-      padding: 10px;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
     }
-    h1 {
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 1rem;
       text-align: center;
-      font-size: 1.4rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    select, button {
-      margin: 6px 0;
-      padding: 10px;
-      font-size: 1rem;
-      width: 95%;
-      max-width: 280px;
+    main {
+      padding: 1rem;
+      max-width: 960px;
+      margin: auto;
     }
     .controls {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1rem;
     }
-    .result-box {
-      background: var(--table-bg);
-      padding: 12px;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    select, button {
+      padding: 0.6rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      min-width: 120px;
+      background: #fff;
+    }
+    .chart-container {
       overflow-x: auto;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     table {
       border-collapse: collapse;
       width: 100%;
-      min-width: 500px;
+      table-layout: fixed;
     }
     th, td {
-      border: 1px solid #ccc;
-      padding: 4px;
+      border: 1px solid #ddd;
       text-align: center;
-      font-size: 12px;
-      cursor: pointer;
+      padding: 0.4rem;
+      font-size: 0.85rem;
+      position: relative;
+      transition: background 0.3s;
     }
-    th {
-      background-color: #f0f0f0;
+    td:hover {
+      background-color: #f0f8ff;
     }
-    .popup {
-      display: none;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 10px 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      z-index: 100;
+    .ev-popup {
+      font-size: 0.7rem;
+      color: #666;
+      margin-top: 0.2rem;
+    }
+    @media (max-width: 600px) {
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
   </style>
 </head>
 <body>
-<h1>♠️ ポーカー戦略チャート (完全版)</h1>
+  <header>
+    <h1>AI補完プリフロップチャート</h1>
+  </header>
+  <main>
+    <div class="controls">
+      <select id="action"></select>
+      <select id="position"></select>
+      <select id="vs"></select>
+      <select id="stack"></select>
+      <select id="type"></select>
+    </div>
+    <div class="chart-container" id="chart"></div>
+  </main>
+  <script>
+    let rangeData, evData;
 
-<div class="controls">
-  <select id="actionSelect" onchange="updateOptions()"></select>
-  <select id="selfSelect" onchange="updateOptions()"></select>
-  <select id="vsSelect" onchange="updateOptions()"></select>
-  <select id="stackSelect" onchange="updateOptions()"></select>
-  <select id="typeSelect"></select>
-  <button onclick="showSelected()">📊 レンジ表示</button>
-  <button onclick="toggleDarkMode()">🌓 テーマ切替</button>
-  <button onclick="captureTable()">🖼️ レンジ画像保存</button>
-</div>
+    const actionSelect = document.getElementById("action");
+    const positionSelect = document.getElementById("position");
+    const vsSelect = document.getElementById("vs");
+    const stackSelect = document.getElementById("stack");
+    const typeSelect = document.getElementById("type");
+    const chartContainer = document.getElementById("chart");
 
-<div class="result-box" id="resultBox">
-  <p>ここにレンジ表が表示されます</p>
-</div>
-<div class="popup" id="popupBox"></div>
+    async function loadData() {
+      rangeData = await fetch("range_data_ai.json").then(res => res.json());
+      evData = await fetch("ev_data_ai.json").then(res => res.json());
+      populateSelectors();
+      updateChart();
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script>
-let rangeData = {};
-let evData = {};
-const validTree = {
-  "open": {
-    "UTG": { "": { "15": ["tight","normal","loose"], "30": ["tight","normal","loose"], "50": ["tight","normal","loose"], "100": ["tight","normal","loose"] } },
-    "HJ": { "": { "15": ["tight","normal","loose"], "30": ["tight","normal","loose"], "50": ["tight","normal","loose"], "100": ["tight","normal","loose"] } },
-    "CO": { "": { "15": ["tight","normal","loose"], "30": ["tight","normal","loose"], "50": ["tight","normal","loose"], "100": ["tight","normal","loose"] } },
-    "BTN":{ "": { "15": ["tight","normal","loose"], "30": ["tight","normal","loose"], "50": ["tight","normal","loose"], "100": ["tight","normal","loose"] } },
-    "SB":  { "": { "15": ["tight","normal","loose"], "30": ["tight","normal","loose"], "50": ["tight","normal","loose"], "100": ["tight","normal","loose"] } },
-    "BB":  { "": { "15": ["tight","normal","loose"], "30": ["tight","normal","loose"], "50": ["tight","normal","loose"], "100": ["tight","normal","loose"] } }
-  }
-};
+    function populateSelectors() {
+      actionSelect.innerHTML = Object.keys(rangeData).map(key => `<option value="${key}">${key}</option>`).join("");
+      updateDependentSelectors();
+    }
 
-fetch("range_data.json").then(r => r.json()).then(json => { rangeData = json; initSelectors(); });
-fetch("ev_data.json").then(r => r.json()).then(json => { evData = json; });
+    function updateDependentSelectors() {
+      const action = actionSelect.value;
+      const pos = Object.keys(rangeData[action]);
+      positionSelect.innerHTML = pos.map(p => `<option value="${p}">${p}</option>`).join("");
+      updateVsStackType();
+    }
 
-function populateSelect(select, options) {
-  select.innerHTML = '';
-  for (const val of options) {
-    const opt = document.createElement('option');
-    opt.value = val;
-    opt.textContent = val;
-    select.appendChild(opt);
-  }
-}
+    function updateVsStackType() {
+      const action = actionSelect.value;
+      const position = positionSelect.value;
+      const vs = Object.keys(rangeData[action]?.[position] || {});
+      vsSelect.innerHTML = vs.map(p => `<option value="${p}">${p}</option>`).join("");
+      const stack = Object.keys(rangeData[action]?.[position]?.[vsSelect.value] || {});
+      stackSelect.innerHTML = stack.map(s => `<option value="${s}">${s}BB</option>`).join("");
+      const type = Object.keys(rangeData[action]?.[position]?.[vsSelect.value]?.[stackSelect.value] || {});
+      typeSelect.innerHTML = type.map(t => `<option value="${t}">${t}</option>`).join("");
+    }
 
-function updateOptions() {
-  const action = document.getElementById("actionSelect").value;
-  const self = document.getElementById("selfSelect").value;
-  const vsBox = document.getElementById("vsSelect");
-  const stackBox = document.getElementById("stackSelect");
-  const typeBox = document.getElementById("typeSelect");
+    function updateChart() {
+      const action = actionSelect.value;
+      const position = positionSelect.value;
+      const vs = vsSelect.value;
+      const stack = stackSelect.value;
+      const type = typeSelect.value;
+      const matrix = rangeData?.[action]?.[position]?.[vs]?.[stack]?.[type] || [];
 
-  let vs = "";
-  if (action === "open") {
-    vsBox.style.display = "none";
-  } else {
-    vsBox.style.display = "inline-block";
-    const vsOptions = Object.keys(validTree[action][self]);
-    populateSelect(vsBox, vsOptions);
-    vs = vsBox.value;
-  }
+      let html = "<table><tbody>";
+      for (const row of matrix) {
+        html += "<tr>";
+        for (const cell of row) {
+          const evInfo = evData?.[cell] ? `<div class='ev-popup'>EV: ${evData[cell].ev.toFixed(2)}<br>勝率: ${evData[cell].winRate.toFixed(1)}%</div>` : "";
+          html += `<td>${cell || ""}${evInfo}</td>`;
+        }
+        html += "</tr>";
+      }
+      html += "</tbody></table>";
+      chartContainer.innerHTML = html;
+    }
 
-  // 🛠️ open時は vs="" として処理
-  const target = validTree[action][self][action === "open" ? "" : vs];
-  const stackOptions = Object.keys(target);
-  populateSelect(stackBox, stackOptions);
-  const stack = stackBox.value;
+    actionSelect.addEventListener("change", () => {
+      updateDependentSelectors();
+      updateChart();
+    });
+    positionSelect.addEventListener("change", () => {
+      updateVsStackType();
+      updateChart();
+    });
+    vsSelect.addEventListener("change", () => {
+      updateVsStackType();
+      updateChart();
+    });
+    stackSelect.addEventListener("change", () => {
+      updateVsStackType();
+      updateChart();
+    });
+    typeSelect.addEventListener("change", updateChart);
 
-  const typeOptions = target[stack];
-  populateSelect(typeBox, typeOptions);
-}
-
-function showSelected() {
-  const action = document.getElementById("actionSelect").value;
-  const self = document.getElementById("selfSelect").value;
-  const vs = document.getElementById("vsSelect").value;
-  const stack = document.getElementById("stackSelect").value;
-  const type = document.getElementById("typeSelect").value;
-  const result = document.getElementById("resultBox");
-
-  let table = (action === "open") ? rangeData?.[action]?.[self]?.[stack]?.[type]
-                                  : rangeData?.[action]?.[self]?.[vs]?.[stack]?.[type];
-
-  if (!table) {
-    result.innerHTML = `<p>※この条件のレンジ表は未登録です。</p>`;
-    return;
-  }
-
-  const labels = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
-  let html = `<h3>${self} / ${stack}BB / ${action}${action !== "open" ? " vs " + vs : ""} / ${type}</h3>`;
-  html += `<table><tr><th></th>${labels.map(l => `<th>${l}</th>`).join('')}</tr>`;
-  for (let i = 0; i < labels.length; i++) {
-    html += `<tr><th>${labels[i]}</th>` + table[i].map(cell => {
-      const val = cell || "";
-      return `<td onclick="showPopup('${val}')">${val}</td>`;
-    }).join('') + "</tr>";
-  }
-  html += "</table>";
-  result.innerHTML = html;
-}
-
-function showPopup(hand) {
-  if (!hand) return;
-  const data = evData[hand];
-  const popup = document.getElementById('popupBox');
-  popup.innerHTML = data
-    ? `<strong>${hand}</strong><br>EV: ${data.ev} / 勝率: ${data.winRate}%<br>${data.note}`
-    : `<strong>${hand}</strong><br>データなし`;
-  popup.style.display = 'block';
-  setTimeout(() => { popup.style.display = 'none'; }, 3500);
-}
-
-function toggleDarkMode() {
-  document.body.classList.toggle("dark");
-}
-
-function captureTable() {
-  html2canvas(document.getElementById('resultBox')).then(canvas => {
-    const link = document.createElement('a');
-    link.download = 'range_chart.png';
-    link.href = canvas.toDataURL();
-    link.click();
-  });
-}
-
-function initSelectors() {
-  populateSelect(document.getElementById("actionSelect"), Object.keys(validTree));
-  populateSelect(document.getElementById("selfSelect"), Object.keys(validTree["open"]));
-  updateOptions();
-}
-</script>
+    loadData();
+  </script>
 </body>
 </html>
