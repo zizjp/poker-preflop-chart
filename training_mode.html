@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>トレーニングモード | プリフロップクイズ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      padding: 20px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+    }
+    .question-box {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .question-box h2 {
+      font-size: 1.2rem;
+    }
+    .answer-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+    }
+    .answer-buttons button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .correct { background-color: #4caf50; color: white; }
+    .incorrect { background-color: #f44336; color: white; }
+    .next-button {
+      margin-top: 15px;
+      padding: 8px 16px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      background-color: #2196f3;
+      color: white;
+      cursor: pointer;
+    }
+    .back-link {
+      margin-top: 30px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 トレーニングモード</h1>
+
+  <div class="question-box" id="questionBox">
+    <h2>問題を読み込み中...</h2>
+  </div>
+
+  <div class="back-link">
+    <a href="index.html">← ホームに戻る</a>
+  </div>
+
+  <script>
+    let rangeData = {};
+    const positions = ["UTG", "HJ", "CO", "BTN", "SB", "BB"];
+    const stacks = ["15", "30", "50", "100"];
+    const types = ["tight", "normal", "loose"];
+
+    function getRandom(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    function generateQuestion() {
+      const pos = getRandom(positions);
+      const stack = getRandom(stacks);
+      const type = getRandom(types);
+      const table = rangeData[pos]?.[stack]?.[type];
+      if (!table) return;
+      const y = Math.floor(Math.random() * 13);
+      const x = Math.floor(Math.random() * 13);
+      const labels = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+      const hand = table[y]?.[x];
+      if (!hand) return generateQuestion();
+
+      const box = document.getElementById("questionBox");
+      box.innerHTML = `
+        <h2>${hand} は ${pos} からオープンして良い？<br><span style="font-size:0.9rem;">(${stack}BB / ${type})</span></h2>
+        <div class="answer-buttons">
+          <button onclick="checkAnswer('${hand}', '${pos}', '${stack}', '${type}', true)">✅ はい</button>
+          <button onclick="checkAnswer('${hand}', '${pos}', '${stack}', '${type}', false)">❌ いいえ</button>
+        </div>
+      `;
+    }
+
+    function checkAnswer(hand, pos, stack, type, userAnswer) {
+      const actual = rangeData[pos]?.[stack]?.[type]?.flat().includes(hand);
+      const box = document.getElementById("questionBox");
+      const correct = userAnswer === actual;
+      box.innerHTML += `
+        <p style="margin-top:10px;">${correct ? '✅ 正解！' : '❌ 不正解'}<br><strong>${hand}</strong> は ${actual ? '使える' : '使えない'}ハンドです。</p>
+        <button class="next-button" onclick="generateQuestion()">次の問題へ →</button>
+      `;
+    }
+
+    fetch("range_data.json").then(r => r.json()).then(json => {
+      rangeData = json;
+      generateQuestion();
+    });
+  </script>
+</body>
+</html>
