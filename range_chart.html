@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>プリフロップレンジチャート v0.1 - AI補完</title>
+  <title>プリフロップレンジチャート v0.2 - AI補完</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
   <style>
     body {
@@ -87,7 +87,7 @@
   </style>
 </head>
 <body>
-  <header>プリフロップレンジチャート <span style="font-size: 0.9rem; opacity: 0.8;">v0.1</span> - AI補完</header>
+  <header>プリフロップレンジチャート <span style="font-size: 0.9rem; opacity: 0.8;">v0.2</span> - AI補完</header>
   <main>
     <div class="controls">
       <select id="action"></select>
@@ -175,9 +175,15 @@
       vsSelect.innerHTML = vsOptions.map(v => `<option value="${v}">${v}</option>`).join('');
       const selectedVs = vsSelect.value || vsOptions[0];
       const stackOptions = Object.keys(rangeData[action][position][selectedVs] || {});
-      stackSelect.innerHTML = stackOptions.map(s => `<option value="${s}">${s}BB</option>`).join('');
-      const typeOptions = Object.keys(rangeData[action][position][selectedVs][stackSelect.value] || {});
-      typeSelect.innerHTML = typeOptions.map(t => `<option value="${t}">${t}</option>`).join('');
+      stackSelect.innerHTML = stackOptions
+        .sort((a, b) => parseInt(a) - parseInt(b))
+        .map(s => `<option value="${s}">${s}BB</option>`)
+        .join('');
+      const typeSource = rangeData[action][position][selectedVs][stackSelect.value];
+const typeOptions = Array.isArray(typeSource)
+  ? ["default"]
+  : Object.keys(typeSource);
+      typeSelect.innerHTML = typeOptions.map(t => `<option value="${t}">${t === "default" ? "標準" : t}</option>`).join('');
     }
 
     function getMatrix() {
