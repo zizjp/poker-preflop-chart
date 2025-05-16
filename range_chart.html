@@ -6,154 +6,427 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ポーカー戦略チャート</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #f9f9f9;
-      padding: 20px;
-    }
-    select, button {
-      margin: 5px;
-      padding: 6px 10px;
-    }
-    .button-group button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-    .popup {
-      display: none;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #fff;
-      border: 1px solid #ccc;
-      padding: 10px;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-    }
+    body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
+    h1 { text-align: center; }
+    select { margin: 5px; padding: 6px; font-size: 1rem; }
+    .controls { text-align: center; margin-bottom: 20px; }
+    .result-box { background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
   </style>
 </head>
 <body>
-<h1>♠️ GTOレンジチャート</h1>
 
-<div>
-  <label>ポジション:
-    <select id="position">
-      <option value="UTG">UTG</option>
-      <option value="HJ">HJ</option>
-      <option value="CO">CO</option>
-      <option value="BTN" selected>BTN</option>
-      <option value="SB">SB</option>
-      <option value="BB">BB</option>
-    </select>
-  </label>
+<h1>♠️ ポーカー戦略チャート</h1>
 
-  <label>スタック:
-    <select id="stack">
-      <option value="15">15BB</option>
-      <option value="30">30BB</option>
-      <option value="50">50BB</option>
-      <option value="100" selected>100BB</option>
-    </select>
-  </label>
-
-  <label>アクション:
-    <select id="actionType" onchange="updateVsPositionVisibility()">
-      <option value="open">オープン</option>
-      <option value="3bet">3ベット</option>
-      <option value="call">コールドコール</option>
-      <option value="defend">ディフェンス</option>
-    </select>
-  </label>
-
-  <label id="vsWrapper">相手のポジション:
-    <select id="vsPosition">
-      <option value="UTG">UTG</option>
-      <option value="HJ">HJ</option>
-      <option value="CO">CO</option>
-      <option value="BTN">BTN</option>
-      <option value="SB">SB</option>
-      <option value="BB">BB</option>
-    </select>
-  </label>
+<div class="controls">
+  <select id="actionSelect" onchange="updateOptions()"></select>
+  <select id="selfSelect" onchange="updateOptions()"></select>
+  <select id="vsSelect" onchange="updateOptions()"></select>
+  <select id="stackSelect" onchange="updateOptions()"></select>
+  <select id="typeSelect"></select>
+  <button onclick="showSelected()">表示</button>
 </div>
 
-<div class="button-group">
-  <button id="btnTight" onclick="selectType('tight')">Tight相手</button>
-  <button id="btnNormal" onclick="selectType('normal')">Normal相手</button>
-  <button id="btnLoose" onclick="selectType('loose')">Loose相手</button>
+<div class="result-box" id="resultBox">
+  <p>ここに選択されたレンジ表の条件が表示されます</p>
 </div>
-
-<div id="resultBox"></div>
-<div class="popup" id="popupBox"></div>
 
 <script>
-let rangeData = {};
-let evData = {};
-let currentTableHTML = "";
+const validTree = {
+  "open": {
+    "UTG": {
+      "none": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    },
+    "HJ": {
+      "none": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    },
+    "CO": {
+      "none": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    },
+    "BTN": {
+      "none": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    },
+    "SB": {
+      "none": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    },
+    "BB": {
+      "none": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    }
+  },
+  "3bet": {
+    "BTN": {
+      "CO": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    },
+    "SB": {
+      "BTN": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    },
+    "BB": {
+      "SB": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    }
+  },
+  "call": {
+    "BB": {
+      "BTN": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      },
+      "CO": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    },
+    "SB": {
+      "BTN": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    }
+  },
+  "defend": {
+    "BB": {
+      "CO": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      },
+      "BTN": {
+        "15": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "30": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "50": [
+          "tight",
+          "normal",
+          "loose"
+        ],
+        "100": [
+          "tight",
+          "normal",
+          "loose"
+        ]
+      }
+    }
+  }
+};
 
-fetch('range_data.json').then(r => r.json()).then(json => rangeData = json);
-fetch('ev_data.json').then(r => r.json()).then(json => evData = json);
-
-function updateVsPositionVisibility() {
-  const action = document.getElementById("actionType").value;
-  const vsWrapper = document.getElementById("vsWrapper");
-  vsWrapper.style.display = (action === "open") ? "none" : "inline";
+function populateSelect(select, options) {
+  select.innerHTML = '';
+  for (const val of options) {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = val;
+    select.appendChild(opt);
+  }
 }
 
-function selectType(type) {
-  const pos = document.getElementById("position").value;
-  const stack = document.getElementById("stack").value;
-  const action = document.getElementById("actionType").value;
-  const vs = document.getElementById("vsPosition").value;
-  const result = document.getElementById("resultBox");
+function updateOptions() {
+  const action = document.getElementById("actionSelect").value;
+  const self = document.getElementById("selfSelect").value;
+  const vsBox = document.getElementById("vsSelect");
+  const stackBox = document.getElementById("stackSelect");
+  const typeBox = document.getElementById("typeSelect");
 
-  let table;
-  if (action === "open") {
-    table = rangeData?.[action]?.[pos]?.[stack]?.[type];
-  } else {
-    table = rangeData?.[action]?.[pos]?.[vs]?.[stack]?.[type];
-  }
+  const vsOptions = Object.keys(validTree[action][self]);
+  populateSelect(vsBox, vsOptions);
+  const vs = vsBox.value;
 
-  if (!table) {
-    result.innerHTML = `<p>※この条件のレンジ表は未登録です。</p>`;
-    return;
-  }
+  const stackOptions = Object.keys(validTree[action][self][vs]);
+  populateSelect(stackBox, stackOptions);
+  const stack = stackBox.value;
 
-  const labels = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
-  let html = `<h3>${pos} / ${stack}BB / ${action}${action!=="open" ? ' vs '+vs : ''} / ${type}</h3><table border="1"><tr><th></th>`;
-  html += labels.map(l => `<th>${l}</th>`).join('') + '</tr>';
-
-  for (let i = 0; i < labels.length; i++) {
-    html += `<tr><th>${labels[i]}</th>` + table[i].map(cell => {
-      if (!cell) return "<td></td>";
-      let cls = "";
-      if (/^(AA|KK|QQ|JJ|TT|99|88|77|66|55|44|33|22)$/.test(cell)) cls = "premium";
-      else if (cell.endsWith("s")) cls = "suited";
-      else if (cell.endsWith("o")) cls = "offsuit";
-      if (/^[JQKA][JQKA][so]?$/.test(cell)) cls += " broadway";
-      if (/^[2-9][2-9]s$/.test(cell)) cls += " connector";
-      return `<td class="${cls}" data-hand="${cell}" onclick="showPopup('${cell}')">${cell}</td>`;
-    }).join('') + "</tr>";
-  }
-
-  result.innerHTML = html + "</table>";
-  currentTableHTML = result.innerHTML;
+  const typeOptions = validTree[action][self][vs][stack];
+  populateSelect(typeBox, typeOptions);
 }
 
-function showPopup(hand) {
-  const popup = document.getElementById("popupBox");
-  const data = evData[hand];
-  if (data) {
-    popup.innerHTML = `<strong>${hand}</strong><br>EV: ${data.ev} BB<br>勝率: ${data.winRate}%<br>${data.note || ''}`;
-  } else {
-    popup.innerHTML = `<strong>${hand}</strong><br>データなし`;
-  }
-  popup.style.display = 'block';
-  setTimeout(() => popup.style.display = 'none', 3000);
+function showSelected() {
+  const action = document.getElementById("actionSelect").value;
+  const self = document.getElementById("selfSelect").value;
+  const vs = document.getElementById("vsSelect").value;
+  const stack = document.getElementById("stackSelect").value;
+  const type = document.getElementById("typeSelect").value;
+  document.getElementById("resultBox").innerHTML = `
+    <h3>選択中の条件:</h3>
+    <ul>
+      <li>アクション: ${{"open": "オープン", "3bet": "3ベット", "call": "コール", "defend": "ディフェンス"}[action] || action}</li>
+      <li>自分のポジション: ${self}</li>
+      <li>相手のポジション: ${vs === "none" ? "（なし）" : vs}</li>
+      <li>スタックサイズ: ${stack}BB</li>
+      <li>レンジタイプ: ${type}</li>
+    </ul>
+  `;
 }
 
-window.addEventListener("DOMContentLoaded", updateVsPositionVisibility);
+window.onload = function() {
+  populateSelect(document.getElementById("actionSelect"), Object.keys(validTree));
+  populateSelect(document.getElementById("selfSelect"), Object.keys(validTree["open"]));
+  updateOptions();
+};
 </script>
+
 </body>
 </html>
