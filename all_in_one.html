@@ -45,6 +45,31 @@
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
+    table {
+      border-collapse: collapse;
+      margin: auto;
+      width: 100%;
+      max-width: 800px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+      font-size: 13px;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .premium {
+      background-color: #ffe0e0;
+      font-weight: bold;
+    }
+    .suited {
+      background-color: #d0ebff;
+    }
+    .offsuit {
+      background-color: #e6ffe6;
+    }
   </style>
 </head>
 <body>
@@ -65,7 +90,8 @@
   <label for="stack">スタックサイズ：<span id="stackValue">30</span>BB</label>
   <input type="range" id="stack" min="15" max="100" step="5" value="30" oninput="document.getElementById('stackValue').textContent = this.value">
 
-  <div class="button-group">\    <button onclick="selectType('tight')">Tight相手</button>
+  <div class="button-group">
+    <button onclick="selectType('tight')">Tight相手</button>
     <button onclick="selectType('normal')">Normal相手</button>
     <button onclick="selectType('loose')">Loose相手</button>
   </div>
@@ -76,12 +102,40 @@
 </div>
 
 <script>
-  function selectType(type) {
-    const pos = document.getElementById('position').value;
-    const stack = document.getElementById('stack').value;
-    const result = document.getElementById('resultBox');
-    result.innerHTML = `<h2>${pos} / ${stack}BB / ${type} 相手</h2><p>※ここに対応するレンジ表を表示します</p>`;
+let rangeData = {};
+
+fetch('range_data.json')
+  .then(res => res.json())
+  .then(json => { rangeData = json; });
+
+function selectType(type) {
+  const pos = document.getElementById('position').value;
+  const stack = document.getElementById('stack').value;
+  const result = document.getElementById('resultBox');
+  const table = rangeData?.[pos]?.[stack]?.[type];
+
+  if (!table) {
+    result.innerHTML = `<h2>${pos} / ${stack}BB / ${type} 相手</h2><p>※この条件のレンジ表はまだ未登録です。</p>`;
+    return;
   }
+
+  let html = `<h2>${pos} / ${stack}BB / ${type} 相手</h2><table><tr><th></th>`;
+  const labels = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+  html += labels.map(l => `<th>${l}</th>`).join('') + '</tr>';
+
+  for (let i = 0; i < labels.length; i++) {
+    html += `<tr><th>${labels[i]}</th>` + table[i].map(cell => {
+      if (!cell) return "<td></td>";
+      if (/^([2-9]|1[0-3]){2}$|AA|KK|QQ|JJ|TT|99|88|77|66|55|44|33|22/.test(cell)) return `<td class="premium">${cell}</td>`;
+      if (cell.endsWith('s')) return `<td class="suited">${cell}</td>`;
+      if (cell.endsWith('o')) return `<td class="offsuit">${cell}</td>`;
+      return `<td>${cell}</td>`;
+    }).join('') + '</tr>';
+  }
+
+  html += "</table>";
+  result.innerHTML = html;
+}
 </script>
 
 </body>
