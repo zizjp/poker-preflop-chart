@@ -3,12 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ポーカー戦略チャート - 条件付きレンジ選択</title>
+  <title>ポーカー戦略チャート</title>
   <style>
+    :root {
+      --bg-color: #f9f9f9;
+      --text-color: #333;
+      --table-bg: white;
+      --highlight-premium: #ffe0e0;
+      --highlight-suited: #d0ebff;
+      --highlight-offsuit: #e6ffe6;
+      --highlight-connector: #fdf0c2;
+      --highlight-broadway: #d8f0e2;
+    }
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #f0f0f0;
+      --table-bg: #1e1e1e;
+    }
     body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
       font-family: sans-serif;
-      background: #f9f9f9;
-      color: #333;
       margin: 10px;
     }
     h1, h2 {
@@ -44,7 +59,7 @@
     .result-box {
       margin-top: 20px;
       padding: 10px;
-      background: white;
+      background: var(--table-bg);
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.1);
       overflow-x: auto;
@@ -63,21 +78,34 @@
     th {
       background-color: #f2f2f2;
     }
-    .premium {
-      background-color: #ffe0e0;
-      font-weight: bold;
+    .premium { background-color: var(--highlight-premium); font-weight: bold; }
+    .suited { background-color: var(--highlight-suited); }
+    .offsuit { background-color: var(--highlight-offsuit); }
+    .connector { background-color: var(--highlight-connector); }
+    .broadway { background-color: var(--highlight-broadway); }
+    .top-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
     }
-    .suited {
-      background-color: #d0ebff;
-    }
-    .offsuit {
-      background-color: #e6ffe6;
+    input[type=text] {
+      padding: 6px;
+      font-size: 1rem;
+      width: 150px;
     }
   </style>
 </head>
 <body>
 
-<h1>状況に応じたオープンレンジ表</h1>
+<h1>ポーカー戦略チャート</h1>
+
+<div class="top-controls">
+  <button onclick="toggleDarkMode()">🌓 テーマ切替</button>
+  <button onclick="window.print()">🖨️ 印刷 / PDF</button>
+  <input type="text" id="handSearch" placeholder="ハンド名 (例: A5s)" oninput="highlightHand(this.value)">
+</div>
 
 <div class="form-section">
   <label for="position">ポジション：</label>
@@ -111,6 +139,7 @@
 
 <script>
 let rangeData = {};
+let currentTableHTML = "";
 
 fetch('range_data.json')
   .then(res => res.json())
@@ -123,7 +152,7 @@ function selectType(type) {
   const table = rangeData?.[pos]?.[stack]?.[type];
 
   if (!table) {
-    result.innerHTML = `<h2>${pos} / ${stack}BB / ${type} 相手</h2><p>※この条件のレンジ表はまだ未登録です。</p>`;
+    result.innerHTML = `<h2>${pos} / ${stack}BB / ${type} 相手</h2><p>※この条件のレンジ表は未登録です。</p>`;
     return;
   }
 
@@ -134,15 +163,36 @@ function selectType(type) {
   for (let i = 0; i < labels.length; i++) {
     html += `<tr><th>${labels[i]}</th>` + table[i].map(cell => {
       if (!cell) return "<td></td>";
-      if (/^([2-9]|1[0-3]){2}$|AA|KK|QQ|JJ|TT|99|88|77|66|55|44|33|22/.test(cell)) return `<td class="premium">${cell}</td>`;
-      if (cell.endsWith('s')) return `<td class="suited">${cell}</td>`;
-      if (cell.endsWith('o')) return `<td class="offsuit">${cell}</td>`;
-      return `<td>${cell}</td>`;
+      let cls = "";
+      if (/^(AA|KK|QQ|JJ|TT|99|88|77|66|55|44|33|22)$/.test(cell)) cls = "premium";
+      else if (cell.endsWith("s")) cls = "suited";
+      else if (cell.endsWith("o")) cls = "offsuit";
+      if (/^[JQKA][JQKA][so]?$/.test(cell)) cls += " broadway";
+      if (/^[2-9][2-9]s$/.test(cell)) cls += " connector";
+      return `<td class="${cls}" data-hand="${cell}">${cell}</td>`;
     }).join('') + '</tr>';
   }
-
   html += "</table>";
   result.innerHTML = html;
+  currentTableHTML = html;
+}
+
+function toggleDarkMode() {
+  document.body.classList.toggle("dark");
+}
+
+function highlightHand(hand) {
+  const result = document.getElementById('resultBox');
+  if (!currentTableHTML) return;
+  result.innerHTML = currentTableHTML;
+  if (hand.length < 2) return;
+  const tdList = result.querySelectorAll('td');
+  tdList.forEach(td => {
+    if (td.dataset.hand && td.dataset.hand.toUpperCase() === hand.toUpperCase()) {
+      td.style.outline = "3px solid orange";
+      td.style.fontWeight = "bold";
+    }
+  });
 }
 </script>
 
