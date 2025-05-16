@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>トレーニングモード | プリフロップクイズ</title>
   <style>
     body {
@@ -17,7 +18,11 @@
     }
     h1 {
       font-size: 1.8rem;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
+    }
+    #modeLabel {
+      font-size: 0.9rem;
+      margin-bottom: 10px;
     }
     .question-box {
       background: white;
@@ -45,8 +50,6 @@
       border-radius: 5px;
       cursor: pointer;
     }
-    .correct { background-color: #4caf50; color: white; }
-    .incorrect { background-color: #f44336; color: white; }
     .next-button {
       margin-top: 15px;
       padding: 8px 16px;
@@ -57,17 +60,51 @@
       color: white;
       cursor: pointer;
     }
+    #scoreBox {
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    #wrongLog {
+      margin-top: 20px;
+      max-width: 400px;
+      width: 100%;
+    }
+    #wrongLog h3 {
+      margin-bottom: 8px;
+    }
+    #wrongList {
+      padding-left: 20px;
+      font-size: 0.9rem;
+    }
     .back-link {
       margin-top: 30px;
       font-size: 0.9rem;
+    }
+    #toggleModeBtn {
+      margin-bottom: 15px;
+      background: #ffa726;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 6px 12px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <h1>🧠 トレーニングモード</h1>
+  <div id="modeLabel">🧠 出題モード：<strong>通常</strong></div>
+  <button id="toggleModeBtn" onclick="toggleMode()">🔁 復習モードをON</button>
 
   <div class="question-box" id="questionBox">
     <h2>問題を読み込み中...</h2>
+  </div>
+
+  <div id="scoreBox">0問中0問正解（0%）</div>
+
+  <div id="wrongLog">
+    <h3>❌ ミスした問題</h3>
+    <ul id="wrongList"></ul>
   </div>
 
   <div class="back-link">
@@ -79,17 +116,63 @@
     const positions = ["UTG", "HJ", "CO", "BTN", "SB", "BB"];
     const stacks = ["15", "30", "50", "100"];
     const types = ["tight", "normal", "loose"];
+    let totalQuestions = 0;
+    let correctAnswers = 0;
+    let wrongLog = [];
+    let reviewMode = false;
 
     function getRandom(array) {
       return array[Math.floor(Math.random() * array.length)];
     }
 
+    function updateScore() {
+      const box = document.getElementById("scoreBox");
+      const percent = totalQuestions ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+      box.textContent = `${totalQuestions}問中${correctAnswers}問正解（${percent}%）`;
+    }
+
+    function updateWrongLog(hand, pos, stack, type) {
+      const ul = document.getElementById("wrongList");
+      const li = document.createElement("li");
+      li.textContent = `${hand} / ${pos} / ${stack}BB / ${type}`;
+      ul.appendChild(li);
+      wrongLog.push({ hand, pos, stack, type });
+    }
+
+    function toggleMode() {
+      reviewMode = !reviewMode;
+      const label = document.getElementById("modeLabel");
+      const btn = document.getElementById("toggleModeBtn");
+      if (reviewMode && wrongLog.length === 0) {
+        alert("ミス履歴がありません。通常モードに戻ります。");
+        reviewMode = false;
+      }
+      label.innerHTML = `🧠 出題モード：<strong>${reviewMode ? "復習" : "通常"}</strong>`;
+      btn.textContent = reviewMode ? "🔁 通常モードに戻す" : "🔁 復習モードをON";
+      generateQuestion();
+    }
+
     function generateQuestion() {
-      const pos = getRandom(positions);
-      const stack = getRandom(stacks);
-      const type = getRandom(types);
+      let selected;
+      if (reviewMode) {
+        selected = getRandom(wrongLog);
+        if (!selected) {
+          alert("復習対象がありません。");
+          reviewMode = false;
+          toggleMode();
+          return;
+        }
+      } else {
+        const pos = getRandom(positions);
+        const stack = getRandom(stacks);
+        const type = getRandom(types);
+        selected = { pos, stack, type };
+      }
+
+      const { pos, stack, type } = selected;
       const table = rangeData[pos]?.[stack]?.[type];
       if (!table) return;
+
       const y = Math.floor(Math.random() * 13);
       const x = Math.floor(Math.random() * 13);
       const labels = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
@@ -108,18 +191,28 @@
 
     function checkAnswer(hand, pos, stack, type, userAnswer) {
       const actual = rangeData[pos]?.[stack]?.[type]?.flat().includes(hand);
-      const box = document.getElementById("questionBox");
       const correct = userAnswer === actual;
+      totalQuestions++;
+      if (correct) {
+        correctAnswers++;
+      } else {
+        updateWrongLog(hand, pos, stack, type);
+      }
+      updateScore();
+
+      const box = document.getElementById("questionBox");
       box.innerHTML += `
         <p style="margin-top:10px;">${correct ? '✅ 正解！' : '❌ 不正解'}<br><strong>${hand}</strong> は ${actual ? '使える' : '使えない'}ハンドです。</p>
         <button class="next-button" onclick="generateQuestion()">次の問題へ →</button>
       `;
     }
 
-    fetch("range_data.json").then(r => r.json()).then(json => {
-      rangeData = json;
-      generateQuestion();
-    });
+    fetch("range_data.json")
+      .then(r => r.json())
+      .then(json => {
+        rangeData = json;
+        generateQuestion();
+      });
   </script>
 </body>
 </html>
