@@ -110,7 +110,7 @@ function selectType(type) {
 
   let table;
   if (action === "open") {
-    table = rangeData?.[pos]?.[stack]?.[type];
+    table = rangeData?.[action]?.[pos]?.[stack]?.[type];
   } else {
     table = rangeData?.[action]?.[pos]?.[vs]?.[stack]?.[type];
   }
