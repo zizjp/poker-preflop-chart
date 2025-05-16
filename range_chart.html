@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ポーカー戦略チャート（GTO対応）</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      margin: 20px;
+      text-align: center;
+    }
+    table {
+      margin: auto;
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 700px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      font-size: 14px;
+      text-align: center;
+    }
+    th {
+      background: #eaeaea;
+    }
+    .popup {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      padding: 10px 16px;
+      display: none;
+      z-index: 999;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+<body>
+
+<h1>📊 ポーカー戦略チャート（GTO準拠）</h1>
+
+<div>
+  <label>ポジション:
+    <select id="position">
+      <option value="UTG">UTG</option>
+      <option value="HJ">HJ</option>
+      <option value="CO">CO</option>
+      <option value="BTN">BTN</option>
+      <option value="SB">SB</option>
+      <option value="BB">BB</option>
+    </select>
+  </label>
+  <label>スタック:
+    <select id="stack">
+      <option value="15">15BB</option>
+      <option value="30">30BB</option>
+      <option value="50">50BB</option>
+      <option value="100" selected>100BB</option>
+    </select>
+  </label>
+  <label>タイプ:
+    <select id="type">
+      <option value="tight">Tight</option>
+      <option value="normal" selected>Normal</option>
+      <option value="loose">Loose</option>
+    </select>
+  </label>
+  <label>アクション:
+    <select id="action">
+      <option value="open" selected>オープン</option>
+      <option value="3bet">3ベット</option>
+      <option value="call">コール</option>
+      <option value="defend">ディフェンス</option>
+    </select>
+  </label>
+  <label>vs:
+    <select id="vsPosition">
+      <option value="UTG">UTG</option>
+      <option value="HJ">HJ</option>
+      <option value="CO">CO</option>
+      <option value="BTN">BTN</option>
+      <option value="SB">SB</option>
+      <option value="BB" selected>BB</option>
+    </select>
+  </label>
+  <button onclick="render()">表示</button>
+</div>
+
+<div id="chart"></div>
+
+<div class="popup" id="popupBox"></div>
+
+<script>
+  let rangeData = {};
+  let evData = {};
+
+  function showPopup(hand) {
+    const info = evData[hand];
+    const popup = document.getElementById("popupBox");
+    popup.innerHTML = info ? `<strong>${hand}</strong><br>EV: ${info.ev}<br>勝率: ${info.winRate}%<br>${info.note}` : `${hand} の情報は未登録です`;
+    popup.style.display = "block";
+    setTimeout(() => popup.style.display = "none", 4000);
+  }
+
+  function render() {
+    const pos = position.value;
+    const stack = stack.value;
+    const type = type.value;
+    const action = action.value;
+    const vs = vsPosition.value;
+    const labels = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+    let table;
+
+    if (action === 'open') {
+      table = rangeData[pos]?.[stack]?.[type];
+    } else {
+      table = rangeData?.[action]?.[pos]?.[vs]?.[stack]?.[type];
+    }
+
+    if (!table) {
+      chart.innerHTML = `<p>該当データが見つかりません</p>`;
+      return;
+    }
+
+    let html = '<table><tr><th></th>' + labels.map(l => `<th>${l}</th>`).join('') + '</tr>';
+    for (let i = 0; i < 13; i++) {
+      html += '<tr><th>' + labels[i] + '</th>';
+      for (let j = 0; j < 13; j++) {
+        const cell = table[i][j];
+        html += `<td onclick="showPopup('${cell}')">${cell || ''}</td>`;
+      }
+      html += '</tr>';
+    }
+    html += '</table>';
+    chart.innerHTML = html;
+  }
+
+  Promise.all([
+    fetch('range_data.json').then(res => res.json()),
+    fetch('ev_data.json').then(res => res.json())
+  ]).then(([range, ev]) => {
+    rangeData = range;
+    evData = ev;
+    render();
+  });
+</script>
+</body>
+</html>
