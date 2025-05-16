@@ -4,105 +4,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ポーカー戦略チャート (GTO)</title>
+  <title>ポーカー戦略チャート</title>
   <style>
-    :root {
-      --bg-color: #f9f9f9;
-      --text-color: #333;
-      --table-bg: white;
-      --highlight-premium: #ffe0e0;
-      --highlight-suited: #d0ebff;
-      --highlight-offsuit: #e6ffe6;
-      --highlight-connector: #fdf0c2;
-      --highlight-broadway: #d8f0e2;
-    }
-    body.dark {
-      --bg-color: #121212;
-      --text-color: #f0f0f0;
-      --table-bg: #1e1e1e;
-    }
     body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
       font-family: sans-serif;
-      margin: 10px;
+      background: #f9f9f9;
+      padding: 20px;
     }
-    h1, h2 {
-      text-align: center;
-      font-size: 1.5rem;
+    select, button {
+      margin: 5px;
+      padding: 6px 10px;
     }
-    .form-section, .legend, .popup {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    select {
-      padding: 6px;
-      font-size: 1rem;
-      width: 200px;
-    }
-    .button-group {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .button-group button {
-      padding: 8px 12px;
-      font-size: 0.9rem;
-      border: none;
-      background-color: #e0e0e0;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    .result-box {
-      margin-top: 20px;
-      padding: 10px;
-      background: var(--table-bg);
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      overflow-x: auto;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      min-width: 600px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 4px;
-      text-align: center;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
-    .premium { background-color: var(--highlight-premium); font-weight: bold; }
-    .suited { background-color: var(--highlight-suited); }
-    .offsuit { background-color: var(--highlight-offsuit); }
-    .connector { background-color: var(--highlight-connector); }
-    .broadway { background-color: var(--highlight-broadway); }
-    .top-controls {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-    input[type=text] {
-      padding: 6px;
-      font-size: 1rem;
-      width: 150px;
-    }
-    .legend span {
-      display: inline-block;
-      padding: 5px 10px;
-      margin: 2px;
-      border-radius: 5px;
-      font-size: 12px;
+    .button-group button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
     }
     .popup {
       display: none;
@@ -112,117 +27,102 @@
       transform: translateX(-50%);
       background: #fff;
       border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 10px 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      z-index: 100;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
     }
   </style>
 </head>
 <body>
+<h1>♠️ GTOレンジチャート</h1>
 
-<h1>♠️ ポーカー戦略チャート (GTO準拠)</h1>
+<div>
+  <label>ポジション:
+    <select id="position">
+      <option value="UTG">UTG</option>
+      <option value="HJ">HJ</option>
+      <option value="CO">CO</option>
+      <option value="BTN" selected>BTN</option>
+      <option value="SB">SB</option>
+      <option value="BB">BB</option>
+    </select>
+  </label>
 
-<div class="top-controls">
-  <button onclick="toggleDarkMode()">🌓 テーマ切替</button>
-  <button onclick="window.print()">🖨️ 印刷 / PDF</button>
-  <button onclick="captureTable()">🖼️ レンジを画像化</button>
-  <input type="text" id="handSearch" placeholder="ハンド名 (例: A5s)" oninput="highlightHand(this.value)">
+  <label>スタック:
+    <select id="stack">
+      <option value="15">15BB</option>
+      <option value="30">30BB</option>
+      <option value="50">50BB</option>
+      <option value="100" selected>100BB</option>
+    </select>
+  </label>
+
+  <label>アクション:
+    <select id="actionType" onchange="updateVsPositionVisibility()">
+      <option value="open">オープン</option>
+      <option value="3bet">3ベット</option>
+      <option value="call">コールドコール</option>
+      <option value="defend">ディフェンス</option>
+    </select>
+  </label>
+
+  <label id="vsWrapper">相手のポジション:
+    <select id="vsPosition">
+      <option value="UTG">UTG</option>
+      <option value="HJ">HJ</option>
+      <option value="CO">CO</option>
+      <option value="BTN">BTN</option>
+      <option value="SB">SB</option>
+      <option value="BB">BB</option>
+    </select>
+  </label>
 </div>
 
-<div class="form-section">
-  <label for="position">自分のポジション：</label>
-  <select id="position">
-    <option value="UTG">UTG</option>
-    <option value="HJ">HJ</option>
-    <option value="CO">CO</option>
-    <option value="BTN" selected>BTN</option>
-    <option value="SB">SB</option>
-    <option value="BB">BB</option>
-  </select>
-
-  <label for="stack">スタックサイズ：</label>
-  <select id="stack">
-    <option value="15">15BB</option>
-    <option value="30">30BB</option>
-    <option value="50">50BB</option>
-    <option value="100" selected>100BB</option>
-  </select>
-
-  <label for="actionType">アクション：</label>
-  <select id="actionType">
-    <option value="open">オープン</option>
-    <option value="3bet">3ベット</option>
-    <option value="call">コールドコール</option>
-    <option value="defend">ディフェンス</option>
-  </select>
-
-  <label for="vsPosition">相手のポジション：</label>
-  <select id="vsPosition">
-    <option value="UTG">UTG</option>
-    <option value="HJ">HJ</option>
-    <option value="CO">CO</option>
-    <option value="BTN">BTN</option>
-    <option value="SB">SB</option>
-    <option value="BB">BB</option>
-  </select>
-
-  <div class="button-group">
-    <button onclick="selectType('tight')">Tight相手</button>
-    <button onclick="selectType('normal')">Normal相手</button>
-    <button onclick="selectType('loose')">Loose相手</button>
-  </div>
+<div class="button-group">
+  <button id="btnTight" onclick="selectType('tight')">Tight相手</button>
+  <button id="btnNormal" onclick="selectType('normal')">Normal相手</button>
+  <button id="btnLoose" onclick="selectType('loose')">Loose相手</button>
 </div>
 
-<div class="legend">
-  <details>
-    <summary style="cursor:pointer; font-weight:bold;">🎨 レンジ色の意味</summary>
-    <div style="margin-top: 8px;">
-      <span style="background:var(--highlight-premium)">🔴 プレミアムペア</span>
-      <span style="background:var(--highlight-suited)">🔷 スーテッド</span>
-      <span style="background:var(--highlight-offsuit)">🟢 オフスート</span>
-      <span style="background:var(--highlight-connector)">🟡 コネクター</span>
-      <span style="background:var(--highlight-broadway)">🔶 ブロードウェイ</span>
-    </div>
-  </details>
-</div>
-
-<div class="result-box" id="resultBox">
-  <h2>ここにレンジ表が表示されます</h2>
-</div>
-
+<div id="resultBox"></div>
 <div class="popup" id="popupBox"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 let rangeData = {};
 let evData = {};
 let currentTableHTML = "";
 
-fetch('range_data.json').then(res => res.json()).then(json => rangeData = json);
-fetch('ev_data.json').then(res => res.json()).then(json => evData = json);
+fetch('range_data.json').then(r => r.json()).then(json => rangeData = json);
+fetch('ev_data.json').then(r => r.json()).then(json => evData = json);
+
+function updateVsPositionVisibility() {
+  const action = document.getElementById("actionType").value;
+  const vsWrapper = document.getElementById("vsWrapper");
+  vsWrapper.style.display = (action === "open") ? "none" : "inline";
+}
 
 function selectType(type) {
-  const pos = document.getElementById('position').value;
-  const stack = document.getElementById('stack').value;
-  const action = document.getElementById('actionType').value;
-  const vs = document.getElementById('vsPosition').value;
-  const result = document.getElementById('resultBox');
-  let table;
+  const pos = document.getElementById("position").value;
+  const stack = document.getElementById("stack").value;
+  const action = document.getElementById("actionType").value;
+  const vs = document.getElementById("vsPosition").value;
+  const result = document.getElementById("resultBox");
 
-  if (action === 'open') {
+  let table;
+  if (action === "open") {
     table = rangeData?.[pos]?.[stack]?.[type];
   } else {
     table = rangeData?.[action]?.[pos]?.[vs]?.[stack]?.[type];
   }
 
   if (!table) {
-    result.innerHTML = `<h2>${pos} / ${stack}BB / ${action} vs ${vs} / ${type}</h2><p>※この条件のレンジ表は未登録です。</p>`;
+    result.innerHTML = `<p>※この条件のレンジ表は未登録です。</p>`;
     return;
   }
 
   const labels = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
-  let html = `<h2>${pos} / ${stack}BB / ${action} vs ${vs} / ${type}</h2><table><tr><th></th>` + labels.map(l => `<th>${l}</th>`).join('') + '</tr>';
+  let html = `<h3>${pos} / ${stack}BB / ${action}${action!=="open" ? ' vs '+vs : ''} / ${type}</h3><table border="1"><tr><th></th>`;
+  html += labels.map(l => `<th>${l}</th>`).join('') + '</tr>';
 
   for (let i = 0; i < labels.length; i++) {
     html += `<tr><th>${labels[i]}</th>` + table[i].map(cell => {
@@ -234,18 +134,18 @@ function selectType(type) {
       if (/^[JQKA][JQKA][so]?$/.test(cell)) cls += " broadway";
       if (/^[2-9][2-9]s$/.test(cell)) cls += " connector";
       return `<td class="${cls}" data-hand="${cell}" onclick="showPopup('${cell}')">${cell}</td>`;
-    }).join('') + '</tr>';
+    }).join('') + "</tr>";
   }
-  html += "</table>";
-  result.innerHTML = html;
-  currentTableHTML = html;
+
+  result.innerHTML = html + "</table>";
+  currentTableHTML = result.innerHTML;
 }
 
 function showPopup(hand) {
-  const popup = document.getElementById('popupBox');
+  const popup = document.getElementById("popupBox");
   const data = evData[hand];
   if (data) {
-    popup.innerHTML = `<strong>${hand}</strong><br>EV: ${data.ev > 0 ? '+' : ''}${data.ev} BB<br>勝率: ${data.winRate}%<br>${data.note}`;
+    popup.innerHTML = `<strong>${hand}</strong><br>EV: ${data.ev} BB<br>勝率: ${data.winRate}%<br>${data.note || ''}`;
   } else {
     popup.innerHTML = `<strong>${hand}</strong><br>データなし`;
   }
@@ -253,33 +153,7 @@ function showPopup(hand) {
   setTimeout(() => popup.style.display = 'none', 3000);
 }
 
-function toggleDarkMode() {
-  document.body.classList.toggle("dark");
-}
-
-function highlightHand(hand) {
-  const result = document.getElementById('resultBox');
-  if (!currentTableHTML) return;
-  result.innerHTML = currentTableHTML;
-  if (hand.length < 2) return;
-  const tdList = result.querySelectorAll('td');
-  tdList.forEach(td => {
-    if (td.dataset.hand && td.dataset.hand.toUpperCase() === hand.toUpperCase()) {
-      td.style.outline = "3px solid orange";
-      td.style.fontWeight = "bold";
-    }
-  });
-}
-
-function captureTable() {
-  const result = document.getElementById('resultBox');
-  html2canvas(result).then(canvas => {
-    const link = document.createElement('a');
-    link.download = 'range_snapshot.png';
-    link.href = canvas.toDataURL();
-    link.click();
-  });
-}
+window.addEventListener("DOMContentLoaded", updateVsPositionVisibility);
 </script>
 </body>
 </html>
