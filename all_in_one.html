@@ -3,139 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ポーカー戦略チャート</title>
+  <title>ポーカー戦略チャート - 条件付きレンジ選択</title>
   <style>
-    :root {
-      --bg-color: #f9f9f9;
-      --text-color: #000;
-      --table-bg: #fff;
-      --highlight-premium: #ffcdd2;
-      --highlight-suited: #bbdefb;
-    }
-    body.dark {
-      --bg-color: #121212;
-      --text-color: #f1f1f1;
-      --table-bg: #1e1e1e;
-    }
     body {
       font-family: sans-serif;
-      background: var(--bg-color);
-      color: var(--text-color);
+      background: #f9f9f9;
+      color: #333;
       margin: 20px;
     }
-    h1, h2 { text-align: center; }
-    .tab {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-    .tab button {
-      margin: 5px;
-      padding: 10px 16px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      background-color: #e0e0e0;
-      cursor: pointer;
-    }
-    .tab button.active { background: #2196F3; color: #fff; }
-    .chart-section { display: none; }
-    .chart-section.active { display: block; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--table-bg);
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 6px;
+    h1, h2 {
       text-align: center;
     }
-    th { background: #f2f2f2; }
-    .premium { background: var(--highlight-premium); }
-    .suited { background: var(--highlight-suited); }
-    .controls {
+    .form-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    select, input[type=range] {
+      padding: 6px;
+      font-size: 16px;
+    }
+    .button-group {
       display: flex;
       justify-content: center;
       gap: 10px;
-      margin: 20px;
     }
-    .back-link {
-      text-align: center;
+    .button-group button {
+      padding: 8px 12px;
+      font-size: 14px;
+      border: none;
+      background-color: #e0e0e0;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .result-box {
       margin-top: 30px;
-    }
-    .back-link a {
-      text-decoration: none;
-      color: #2196F3;
-      font-weight: bold;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
 
-<h1>初心者向けポーカー戦略チャート</h1>
+<h1>状況に応じたオープンレンジ表</h1>
 
-<div class="controls">
-  <button onclick="toggleDarkMode()">🌓 テーマ切替</button>
-  <button onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+<div class="form-section">
+  <label for="position">ポジション：</label>
+  <select id="position">
+    <option value="UTG">UTG</option>
+    <option value="HJ">HJ</option>
+    <option value="CO">CO</option>
+    <option value="BTN" selected>BTN</option>
+    <option value="SB">SB</option>
+    <option value="BB">BB</option>
+  </select>
+
+  <label for="stack">スタックサイズ：<span id="stackValue">30</span>BB</label>
+  <input type="range" id="stack" min="15" max="100" step="5" value="30" oninput="document.getElementById('stackValue').textContent = this.value">
+
+  <div class="button-group">\    <button onclick="selectType('tight')">Tight相手</button>
+    <button onclick="selectType('normal')">Normal相手</button>
+    <button onclick="selectType('loose')">Loose相手</button>
+  </div>
 </div>
 
-<div class="tab">
-  <button class="tablink" onclick="showChart('open')">オープンレンジ</button>
-  <button class="tablink" onclick="showChart('3bet')">3ベットレンジ</button>
-  <button class="tablink" onclick="showChart('position')">ポジション解説</button>
-</div>
-
-<div id="open" class="chart-section">
-  <h2>プリフロップオープンレンジ</h2>
-  <table>
-    <tr><th></th><th>A</th><th>K</th><th>Q</th><th>J</th><th>T</th></tr>
-    <tr><th>A</th><td class="premium">AA</td><td class="suited">AKs</td><td>AQs</td><td>AJs</td><td>ATs</td></tr>
-    <tr><th>K</th><td>AKo</td><td class="premium">KK</td><td>KQs</td><td>KJs</td><td></td></tr>
-    <tr><th>Q</th><td>AQo</td><td>KQo</td><td class="premium">QQ</td><td></td><td></td></tr>
-  </table>
-</div>
-
-<div id="3bet" class="chart-section">
-  <h2>3ベットチャート</h2>
-  <table>
-    <tr><th>シチュエーション</th><th>ハンド例</th></tr>
-    <tr><td>BTN vs CO</td><td>QQ+, AKs</td></tr>
-    <tr><td>BB vs BTN</td><td>TT+, AQ+, A5s</td></tr>
-    <tr><td>SB vs BTN</td><td>JJ+, AK</td></tr>
-  </table>
-</div>
-
-<div id="position" class="chart-section">
-  <h2>ポジション解説</h2>
-  <table>
-    <tr><th>ポジション</th><th>略称</th><th>特徴</th></tr>
-    <tr><td>アンダー・ザ・ガン</td><td>UTG</td><td>最初に行動。強いハンド推奨</td></tr>
-    <tr><td>カットオフ</td><td>CO</td><td>アグレッシブに攻められる位置</td></tr>
-    <tr><td>ボタン</td><td>BTN</td><td>最後に行動。最も有利</td></tr>
-    <tr><td>スモールブラインド</td><td>SB</td><td>最後から2番目。難しい位置</td></tr>
-    <tr><td>ビッグブラインド</td><td>BB</td><td>プリフロップ最後に行動</td></tr>
-  </table>
-</div>
-
-<div class="back-link">
-  <a href="index.html">← ホームに戻る</a>
+<div class="result-box" id="resultBox">
+  <h2>ここにレンジ表が表示されます</h2>
 </div>
 
 <script>
-function showChart(id) {
-  document.querySelectorAll('.chart-section').forEach(e => e.classList.remove('active'));
-  document.querySelectorAll('.tablink').forEach(e => e.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  event.currentTarget.classList.add('active');
-}
-function toggleDarkMode() {
-  document.body.classList.toggle('dark');
-}
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelector('.tablink').click();
-});
+  function selectType(type) {
+    const pos = document.getElementById('position').value;
+    const stack = document.getElementById('stack').value;
+    const result = document.getElementById('resultBox');
+    result.innerHTML = `<h2>${pos} / ${stack}BB / ${type} 相手</h2><p>※ここに対応するレンジ表を表示します</p>`;
+  }
 </script>
 
 </body>
