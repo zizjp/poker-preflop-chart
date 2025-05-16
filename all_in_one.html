@@ -30,7 +30,7 @@
       text-align: center;
       font-size: 1.5rem;
     }
-    .form-section {
+    .form-section, .legend, .popup {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -74,6 +74,7 @@
       padding: 4px;
       text-align: center;
       font-size: 12px;
+      cursor: pointer;
     }
     th {
       background-color: #f2f2f2;
@@ -95,6 +96,26 @@
       font-size: 1rem;
       width: 150px;
     }
+    .legend span {
+      display: inline-block;
+      padding: 5px 10px;
+      margin: 2px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+    .popup {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
   </style>
 </head>
 <body>
@@ -104,6 +125,7 @@
 <div class="top-controls">
   <button onclick="toggleDarkMode()">🌓 テーマ切替</button>
   <button onclick="window.print()">🖨️ 印刷 / PDF</button>
+  <button onclick="captureTable()">🖼️ レンジを画像化</button>
   <input type="text" id="handSearch" placeholder="ハンド名 (例: A5s)" oninput="highlightHand(this.value)">
 </div>
 
@@ -133,17 +155,33 @@
   </div>
 </div>
 
+<div class="legend">
+  <span style="background:var(--highlight-premium)">プレミアムペア</span>
+  <span style="background:var(--highlight-suited)">スーテッド</span>
+  <span style="background:var(--highlight-offsuit)">オフスート</span>
+  <span style="background:var(--highlight-connector)">コネクター</span>
+  <span style="background:var(--highlight-broadway)">ブロードウェイ</span>
+</div>
+
 <div class="result-box" id="resultBox">
   <h2>ここにレンジ表が表示されます</h2>
 </div>
 
+<div class="popup" id="popupBox"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 let rangeData = {};
+let evData = {};
 let currentTableHTML = "";
 
 fetch('range_data.json')
   .then(res => res.json())
   .then(json => { rangeData = json; });
+
+fetch('ev_data.json')
+  .then(res => res.json())
+  .then(json => { evData = json; });
 
 function selectType(type) {
   const pos = document.getElementById('position').value;
@@ -169,7 +207,7 @@ function selectType(type) {
       else if (cell.endsWith("o")) cls = "offsuit";
       if (/^[JQKA][JQKA][so]?$/.test(cell)) cls += " broadway";
       if (/^[2-9][2-9]s$/.test(cell)) cls += " connector";
-      return `<td class="${cls}" data-hand="${cell}">${cell}</td>`;
+      return `<td class="${cls}" data-hand="${cell}" onclick="showPopup('${cell}')">${cell}</td>`;
     }).join('') + '</tr>';
   }
   html += "</table>";
@@ -192,6 +230,28 @@ function highlightHand(hand) {
       td.style.outline = "3px solid orange";
       td.style.fontWeight = "bold";
     }
+  });
+}
+
+function showPopup(hand) {
+  const popup = document.getElementById('popupBox');
+  const data = evData[hand];
+  if (data) {
+    popup.innerHTML = `<strong>${hand}</strong><br>EV: ${data.ev > 0 ? '+' : ''}${data.ev} BB<br>勝率: ${data.winRate}%<br>${data.note}`;
+  } else {
+    popup.innerHTML = `<strong>${hand}</strong><br>データなし`;
+  }
+  popup.style.display = 'block';
+  setTimeout(() => popup.style.display = 'none', 3500);
+}
+
+function captureTable() {
+  const result = document.getElementById('resultBox');
+  html2canvas(result).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'range_snapshot.png';
+    link.href = canvas.toDataURL();
+    link.click();
   });
 }
 </script>
