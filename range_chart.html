@@ -131,16 +131,23 @@ function updateOptions() {
   const stackBox = document.getElementById("stackSelect");
   const typeBox = document.getElementById("typeSelect");
 
-  const vsOptions = Object.keys(validTree[action][self]);
-  vsBox.style.display = (action === "open") ? "none" : "inline-block";
-  populateSelect(vsBox, vsOptions);
-  const vs = vsBox.value;
+  let vs = "";
+  if (action === "open") {
+    vsBox.style.display = "none";
+  } else {
+    vsBox.style.display = "inline-block";
+    const vsOptions = Object.keys(validTree[action][self]);
+    populateSelect(vsBox, vsOptions);
+    vs = vsBox.value;
+  }
 
-  const stackOptions = Object.keys(validTree[action][self][vs]);
+  // 🛠️ open時は vs="" として処理
+  const target = validTree[action][self][action === "open" ? "" : vs];
+  const stackOptions = Object.keys(target);
   populateSelect(stackBox, stackOptions);
   const stack = stackBox.value;
 
-  const typeOptions = validTree[action][self][vs][stack];
+  const typeOptions = target[stack];
   populateSelect(typeBox, typeOptions);
 }
 
