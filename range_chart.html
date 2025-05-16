@@ -55,13 +55,19 @@
     th, td {
       border: 1px solid #ddd;
       text-align: center;
-      padding: 0.4rem;
+      padding: 0.6rem;
       font-size: 0.85rem;
       position: relative;
       transition: background 0.3s;
     }
+    tbody tr:nth-child(odd) {
+      background-color: #fefefe;
+    }
+    tbody tr:nth-child(even) {
+      background-color: #f0f0f0;
+    }
     td:hover {
-      background-color: #f0f8ff;
+      background-color: #e0f7fa;
     }
     .ev-popup {
       font-size: 0.7rem;
@@ -108,35 +114,65 @@
     }
 
     function populateSelectors() {
-      actionSelect.innerHTML = Object.keys(rangeData).map(key => `<option value="${key}">${key}</option>`).join("");
+      const actions = Object.keys(rangeData);
+      actionSelect.innerHTML = actions.map(key => `<option value="${key}">${key}</option>`).join("");
       updateDependentSelectors();
     }
 
     function updateDependentSelectors() {
       const action = actionSelect.value;
-      const pos = Object.keys(rangeData[action]);
-      positionSelect.innerHTML = pos.map(p => `<option value="${p}">${p}</option>`).join("");
+      const positions = Object.keys(rangeData[action] || {});
+      positionSelect.innerHTML = positions.map(p => `<option value="${p}">${p}</option>`).join("");
       updateVsStackType();
     }
 
     function updateVsStackType() {
       const action = actionSelect.value;
       const position = positionSelect.value;
-      const vs = Object.keys(rangeData[action]?.[position] || {});
-      vsSelect.innerHTML = vs.map(p => `<option value="${p}">${p}</option>`).join("");
-      const stack = Object.keys(rangeData[action]?.[position]?.[vsSelect.value] || {});
-      stackSelect.innerHTML = stack.map(s => `<option value="${s}">${s}BB</option>`).join("");
-      const type = Object.keys(rangeData[action]?.[position]?.[vsSelect.value]?.[stackSelect.value] || {});
-      typeSelect.innerHTML = type.map(t => `<option value="${t}">${t}</option>`).join("");
+      const vsOptions = Object.keys(rangeData[action]?.[position] || {});
+
+      const isOpen = vsOptions.length === 1 && vsOptions[0] === "default";
+
+      vsSelect.style.display = isOpen ? "none" : "inline-block";
+      typeSelect.style.display = isOpen ? "none" : "inline-block";
+
+      vsSelect.innerHTML = vsOptions.map(p => `<option value="${p}">${p}</option>`).join("");
+      const selectedVs = vsSelect.value || vsOptions[0];
+
+      const stackOptions = Object.keys(rangeData[action]?.[position]?.[selectedVs] || {});
+      stackSelect.innerHTML = stackOptions.map(s => `<option value="${s}">${s}BB</option>`).join("");
+
+      const typeOptions = Object.keys(rangeData[action]?.[position]?.[selectedVs]?.[stackSelect.value] || {});
+      typeSelect.innerHTML = typeOptions.map(t => `<option value="${t}">${formatTypeLabel(t)}</option>`).join("");
+    }
+
+    function formatTypeLabel(type) {
+      const map = {
+        "tightBB": "タイトなBBの反応",
+        "looseBB": "ルーズなBBの反応",
+        "standard": "標準スタイル",
+        "aggressive": "アグレッシブ",
+        "passive": "パッシブ"
+      };
+      return map[type] || type;
     }
 
     function updateChart() {
       const action = actionSelect.value;
       const position = positionSelect.value;
-      const vs = vsSelect.value;
+      const vsOptions = Object.keys(rangeData[action]?.[position] || {});
+      const vs = vsOptions.length === 1 && vsOptions[0] === "default" ? "default" : vsSelect.value;
       const stack = stackSelect.value;
       const type = typeSelect.value;
-      const matrix = rangeData?.[action]?.[position]?.[vs]?.[stack]?.[type] || [];
+
+      let matrix;
+      if (vs === "default") {
+        const stackKeys = Object.keys(rangeData[action]?.[position]?.[vs] || {});
+        const typeKeys = Object.keys(rangeData[action]?.[position]?.[vs]?.[stack] || {});
+        matrix = rangeData?.[action]?.[position]?.[vs]?.[stack]?.[typeKeys[0]] || [];
+      } else {
+        matrix = rangeData?.[action]?.[position]?.[vs]?.[stack]?.[type] || [];
+      }
 
       let html = "<table><tbody>";
       for (const row of matrix) {
