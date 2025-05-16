@@ -130,14 +130,14 @@
 </div>
 
 <div class="form-section">
-  <label for="position">自分のポジション：</label>
+  <label for="position">🎯 自分のポジション（あなたの視点）:</label>
   <select id="position">
-    <option value="UTG">UTG</option>
-    <option value="HJ">HJ</option>
-    <option value="CO">CO</option>
-    <option value="BTN" selected>BTN</option>
-    <option value="SB">SB</option>
-    <option value="BB">BB</option>
+    <option value="UTG">🔼 UTG</option>
+    <option value="HJ">🎯 HJ</option>
+    <option value="CO">🎯 CO</option>
+    <option value="BTN" selected>⚔️ BTN</option>
+    <option value="SB">🂠 SB</option>
+    <option value="BB">🛡 BB</option>
   </select>
 
   <label for="stack">スタックサイズ：</label>
@@ -158,12 +158,12 @@
 
   <label for="vsPosition">相手のポジション：</label>
   <select id="vsPosition">
-    <option value="UTG">UTG</option>
-    <option value="HJ">HJ</option>
-    <option value="CO">CO</option>
-    <option value="BTN">BTN</option>
-    <option value="SB">SB</option>
-    <option value="BB">BB</option>
+    <option value="UTG">🔼 UTG</option>
+    <option value="HJ">🎯 HJ</option>
+    <option value="CO">🎯 CO</option>
+    <option value="BTN">⚔️ BTN</option>
+    <option value="SB">🂠 SB</option>
+    <option value="BB">🛡 BB</option>
   </select>
 
   <div class="button-group">
@@ -177,11 +177,11 @@
   <details>
     <summary style="cursor:pointer; font-weight:bold; font-size:14px;">🎨 レンジ色の意味（クリックで開く）</summary>
     <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">
-      <span style="background:var(--highlight-premium)">プレミアムペア</span>
-      <span style="background:var(--highlight-suited)">スーテッド</span>
-      <span style="background:var(--highlight-offsuit)">オフスート</span>
-      <span style="background:var(--highlight-connector)">コネクター</span>
-      <span style="background:var(--highlight-broadway)">ブロードウェイ</span>
+      <span style="background:var(--highlight-premium)">🔴 プレミアムペア</span>
+      <span style="background:var(--highlight-suited)">🔷 スーテッド</span>
+      <span style="background:var(--highlight-offsuit)">🟢 オフスート</span>
+      <span style="background:var(--highlight-connector)">🟡 コネクター</span>
+      <span style="background:var(--highlight-broadway)">🔶 ブロードウェイ</span>
     </div>
   </details>
 </div>
@@ -190,7 +190,96 @@
   <h2>ここにレンジ表が表示されます</h2>
 </div>
 
+<!-- ハンドをクリックしたときに EV・勝率・分類などを表示するためのポップアップ -->
 <div class="popup" id="popupBox"></div>
 
+<script>
+let rangeData = {};
+let evData = {};
+let currentTableHTML = "";
+
+fetch('range_data.json').then(res => res.json()).then(json => rangeData = json);
+fetch('ev_data.json').then(res => res.json()).then(json => evData = json);
+
+function selectType(type) {
+  const pos = document.getElementById('position').value;
+  const stack = document.getElementById('stack').value;
+  const action = document.getElementById('actionType').value;
+  const vs = document.getElementById('vsPosition').value;
+  const result = document.getElementById('resultBox');
+  let table;
+
+  if (action === 'open') {
+    table = rangeData?.[pos]?.[stack]?.[type];
+  } else {
+    table = rangeData?.[action]?.[pos]?.[vs]?.[stack]?.[type];
+  }
+
+  if (!table) {
+    result.innerHTML = `<h2>${pos} / ${stack}BB / ${action} vs ${vs} / ${type}</h2><p>※この条件のレンジ表は未登録です。</p>`;
+    return;
+  }
+
+  const labels = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+  let html = `<h2>${pos} / ${stack}BB / ${action} vs ${vs} / ${type}</h2><table><tr><th></th>` + labels.map(l => `<th>${l}</th>`).join('') + '</tr>';
+
+  for (let i = 0; i < labels.length; i++) {
+    html += `<tr><th>${labels[i]}</th>` + table[i].map(cell => {
+      if (!cell) return "<td></td>";
+      let cls = "";
+      if (/^(AA|KK|QQ|JJ|TT|99|88|77|66|55|44|33|22)$/.test(cell)) cls = "premium";
+      else if (cell.endsWith("s")) cls = "suited";
+      else if (cell.endsWith("o")) cls = "offsuit";
+      if (/^[JQKA][JQKA][so]?$/.test(cell)) cls += " broadway";
+      if (/^[2-9][2-9]s$/.test(cell)) cls += " connector";
+      return `<td class="${cls}" data-hand="${cell}" onclick="showPopup('${cell}')">${cell}</td>`;
+    }).join('') + '</tr>';
+  }
+  html += "</table>";
+  result.innerHTML = html;
+  currentTableHTML = html;
+}
+
+function showPopup(hand) {
+  const popup = document.getElementById('popupBox');
+  const data = evData[hand];
+  if (data) {
+    popup.innerHTML = `<strong>${hand}</strong><br>EV: ${data.ev > 0 ? '+' : ''}${data.ev} BB<br>勝率: ${data.winRate}%<br>${data.note}`;
+  } else {
+    popup.innerHTML = `<strong>${hand}</strong><br>データなし`;
+  }
+  popup.style.display = 'block';
+  setTimeout(() => popup.style.display = 'none', 3500);
+}
+
+function toggleDarkMode() {
+  document.body.classList.toggle("dark");
+}
+
+function highlightHand(hand) {
+  const result = document.getElementById('resultBox');
+  if (!currentTableHTML) return;
+  result.innerHTML = currentTableHTML;
+  if (hand.length < 2) return;
+  const tdList = result.querySelectorAll('td');
+  tdList.forEach(td => {
+    if (td.dataset.hand && td.dataset.hand.toUpperCase() === hand.toUpperCase()) {
+      td.style.outline = "3px solid orange";
+      td.style.fontWeight = "bold";
+    }
+  });
+}
+
+function captureTable() {
+  const result = document.getElementById('resultBox');
+  html2canvas(result).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'range_snapshot.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </body>
 </html>
