@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VSレンジチャート - プリフロップ戦略</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #0f172a;
+      color: #fff;
+      font-size: 16px;
+    }
+    header {
+      background: #1e293b;
+      padding: 1rem;
+      font-size: 1.4rem;
+      text-align: center;
+      font-weight: bold;
+    }
+    .topbar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      gap: 0.5rem;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+    }
+    .topbar label {
+      width: 100%;
+      max-width: 320px;
+      font-size: 1rem;
+    }
+    .topbar select {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1.1rem;
+      margin-top: 0.25rem;
+      border-radius: 4px;
+      background: #334155;
+      color: #fff;
+      border: 1px solid #475569;
+    }
+    .container {
+      padding: 1rem;
+    }
+    .grid {
+      overflow-x: auto;
+      background: #1e293b;
+      border-radius: 8px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      table-layout: fixed;
+    }
+    td {
+      width: 7.69vw;
+      height: 7.69vw;
+      max-width: 48px;
+      max-height: 48px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 0.8rem;
+      font-weight: bold;
+      border: 1px solid #334155;
+      box-sizing: border-box;
+    }
+    .info {
+      background: #1e293b;
+      padding: 1rem;
+      border-top: 1px solid #334155;
+      font-size: 1rem;
+      min-height: 80px;
+    }
+    canvas {
+      max-width: 100%;
+      background: #fff;
+      margin: 1rem auto;
+    }
+    button {
+      padding: 0.75rem 1.25rem;
+      font-size: 1rem;
+      margin: 1rem auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>VSレンジチャート - プリフロップ戦略</header>
+  <nav style="text-align:center; background:#1e293b; padding:0.5rem;">
+    <a href="open_chart.html" style="color:#38bdf8; text-decoration:none; font-size:1rem;">→ Openレンジチャートへ切り替え</a>
+  </nav>
+  <div class="topbar">
+    <label>🃏 アクション<select id="action"></select></label>
+    <label>📍 自分のポジション<select id="position"></select></label>
+    <label>🎯 相手のポジション<select id="vs"></select></label>
+    <label>💰 スタック<select id="stack"></select></label>
+    <label>🎮 スタイル<select id="type"></select></label>
+  </div>
+  <div class="container">
+    <div class="grid">
+      <table><tbody></tbody></table>
+    </div>
+    <div class="info" id="info">ハンドをタップすると詳細が表示されます。</div>
+  </div>
+  <script>
+    const ranks = "AKQJT98765432";
+    let rangeData = {}, evData = {};
+    const action = document.getElementById("action");
+    const position = document.getElementById("position");
+    const vs = document.getElementById("vs");
+    const stack = document.getElementById("stack");
+    const type = document.getElementById("type");
+    const info = document.getElementById("info");
+
+    async function loadData() {
+      [rangeData, evData] = await Promise.all([
+        fetch('range_vs.json').then(r => r.json()),
+        fetch('ev_data_ai.json').then(r => r.json())
+      ]);
+      action.innerHTML = Object.keys(rangeData).map(a => `<option value="${a}">${a}</option>`).join('');
+      populateSelectors();
+    }
+
+    function populateSelectors() {
+      const actions = Object.keys(rangeData);
+      const pList = actions.length ? Object.keys(rangeData[actions[0]]) : [];
+      position.innerHTML = pList.map(p => `<option value="${p}">${p}</option>`).join('');
+      updateVsStackType();
+    }
+
+    function updateVsStackType() {
+      const a = action.value;
+      const p = position.value;
+      const vsList = Object.keys(rangeData[a][p] || {});
+      vs.innerHTML = vsList.map(v => `<option value="${v}">${v}</option>`).join('');
+      const selectedVs = vs.value;
+      const stackList = Object.keys(rangeData[a][p][selectedVs] || {});
+      stack.innerHTML = stackList.map(s => `<option value="${s}">${s}BB</option>`).join('');
+      const selectedStack = stack.value;
+      const typeList = Object.keys(rangeData[a][p][selectedVs][selectedStack] || {});
+      type.innerHTML = typeList.map(t => `<option value="${t}">${t}</option>`).join('');
+      renderChart();
+    }
+
+    function getMatrix() {
+      const a = action.value;
+      const p = position.value;
+      const v = vs.value;
+      const s = stack.value;
+      const t = type.value;
+      const raw = rangeData[a][p][v][s]?.[t] || {};
+      return ranks.split('').map((r1, i) => ranks.split('').map((r2, j) => {
+        const key = i === j ? r1 + r2 : i < j ? r1 + r2 + 's' : r2 + r1 + 'o';
+        return raw[key] ?? { raise: 0, call: 0, fold: 100 };
+      }));
+    }
+
+    function renderChart() {
+      const matrix = getMatrix();
+      const tbody = document.querySelector(".grid tbody");
+      const table = tbody.parentElement;
+      const newBody = document.createElement("tbody");
+
+      for (let i = 0; i < 13; i++) {
+        const tr = document.createElement("tr");
+        for (let j = 0; j < 13; j++) {
+          const td = document.createElement("td");
+          const r1 = ranks[i], r2 = ranks[j];
+          const hand = i === j ? r1 + r2 : i < j ? r1 + r2 + 's' : r2 + r1 + 'o';
+          td.textContent = hand;
+          const { raise, call, fold } = matrix[i][j];
+          const ev = evData[hand]?.ev?.toFixed(2) ?? 'N/A';
+          const win = evData[hand]?.winRate?.toFixed(1) ?? 'N/A';
+          const note = evData[hand]?.note ?? '';
+
+          td.style.background = `linear-gradient(to top,
+            #3b82f6 0%, #3b82f6 ${fold}%,
+            #22c55e ${fold}%, #22c55e ${fold + call}%,
+            #ef4444 ${fold + call}%, #ef4444 100%)`;
+
+          td.onclick = () => {
+            info.textContent = `【${hand}】Raise: ${raise}% / Call: ${call}% / Fold: ${fold}% | EV: ${ev} / 勝率: ${win}% ${note}`;
+          };
+          tr.appendChild(td);
+        }
+        newBody.appendChild(tr);
+      }
+      table.replaceChild(newBody, tbody);
+    }
+
+    action.onchange = updateVsStackType;
+    position.onchange = updateVsStackType;
+    vs.onchange = updateVsStackType;
+    stack.onchange = updateVsStackType;
+    type.onchange = renderChart;
+
+    loadData();
+  </script>
+</body>
+</html>

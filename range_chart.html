@@ -10,11 +10,12 @@
       font-family: system-ui, sans-serif;
       background: #0f172a;
       color: #fff;
+      font-size: 16px;
     }
     header {
       background: #1e293b;
       padding: 1rem;
-      font-size: 1.2rem;
+      font-size: 1.4rem;
       text-align: center;
       font-weight: bold;
     }
@@ -34,6 +35,7 @@
       padding: 0.4rem;
       border-radius: 4px;
       min-width: 100px;
+      font-size: 1rem;
     }
     .container {
       display: flex;
@@ -51,17 +53,20 @@
     }
     table {
       border-collapse: collapse;
+      width: 100%;
       min-width: 624px;
       margin: auto;
     }
     td {
-      width: 48px;
-      height: 48px;
+      width: 7.69%;
+      height: 5.5vw;
+      max-height: 60px;
       text-align: center;
       vertical-align: middle;
-      font-size: 0.8rem;
+      font-size: 1rem;
       font-weight: bold;
       border: 1px solid #334155;
+      box-sizing: border-box;
     }
     .cell-green { background: #22c55e; color: #000; }
     .cell-red { background: #ef4444; color: #fff; }
@@ -87,33 +92,47 @@
       padding: 0.75rem;
       border-radius: 6px;
       text-align: center;
-      font-size: 0.9rem;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
   <header>プリフロップレンジチャート v0.5 - ワイヤーフレーム版</header>
   <div class="topbar">
-    <select><option>Open</option><option>3bet</option><option>Call</option></select>
-    <select><option>UTG</option><option>CO</option><option>BTN</option><option>BB</option></select>
-    <select><option>vs BB</option><option>vs CO</option><option>vs BTN</option></select>
-    <select><option>10BB</option><option>25BB</option><option>50BB</option><option>100BB</option></select>
-    <select><option>標準</option><option>tight</option><option>loose</option></select>
-  </div>
+  <label>
+    <span style="display:flex; align-items:center; font-size:0.8rem; gap:0.3rem;">
+      <span>🃏 アクション</span>
+    </span>
+    <select id="action"></select>
+  </label>
+  <label>
+    <span style="display:flex; align-items:center; font-size:0.8rem; gap:0.3rem;">
+      <span>📍 ポジション</span>
+    </span>
+    <select id="position"></select>
+  </label>
+  <label>
+    <span style="display:flex; align-items:center; font-size:0.8rem; gap:0.3rem;">
+      <span>💰 スタック</span>
+    </span>
+    <select id="stack"></select>
+  </label>
+  <label>
+    <span style="display:flex; align-items:center; font-size:0.8rem; gap:0.3rem;">
+      <span>🎮 スタイル</span>
+    </span>
+    <select id="type"></select>
+  </label>
+  <label>
+    <span style="display:flex; align-items:center; font-size:0.8rem; gap:0.3rem;">
+      <span>🎯 対戦相手</span>
+    </span>
+    <select id="vs"></select>
+  </label>
+</div>
   <div class="container">
     <div class="grid">
-      <table>
-        <tbody>
-          <!-- 横13×縦13のサンプル -->
-          " + Array.from({ length: 13 }).map((_, i) => {
-            return "<tr>" + Array.from({ length: 13 }).map((_, j) => {
-              const label = String.fromCharCode(65 + i) + String.fromCharCode(65 + j);
-              const cls = j < i ? 'cell-blue' : j === i ? 'cell-red' : 'cell-green';
-              return `<td class='${cls}'>${label}</td>`;
-            }).join('') + "</tr>";
-          }).join('') + "
-        </tbody>
-      </table>
+      <table><tbody></tbody></table>
     </div>
     <div class="sidebar">
       <h2>詳細情報</h2>
@@ -124,5 +143,96 @@
       </div>
     </div>
   </div>
+  <script>
+    const ranks = "AKQJT98765432";
+    let rangeData = {}, evData = {};
+
+    async function loadData() {
+      rangeData = await fetch('range_data_ai.json').then(r => r.json());
+      evData = await fetch('ev_data_ai.json').then(r => r.json());
+      populateSelectors();
+      renderChart();
+    }
+
+    function populateSelectors() {
+      const actions = Object.keys(rangeData);
+      action.innerHTML = actions.map(a => `<option value="${a}">${a}</option>`).join('');
+      updateDependentSelectors();
+    }
+
+    function updateDependentSelectors() {
+      const posList = Object.keys(rangeData[action.value] || {});
+      position.innerHTML = posList.map(p => `<option value="${p}">${p}</option>`).join('');
+      updateVsStackType();
+    }
+
+    function updateVsStackType() {
+      const a = action.value;
+      const p = position.value;
+      const vsKeys = Object.keys(rangeData[a]?.[p] || {});
+      vs.style.display = vsKeys.length === 1 && vsKeys[0] === 'default' ? 'none' : 'inline-block';
+      vs.innerHTML = vsKeys.map(v => `<option value="${v}">${v}</option>`).join('');
+      const selectedVs = vs.value || vsKeys[0];
+      const stacks = Object.keys(rangeData[a][p][selectedVs] || {});
+      stack.innerHTML = stacks.sort((a,b)=>a-b).map(s => `<option value="${s}">${s}BB</option>`).join('');
+      const types = rangeData[a][p][selectedVs][stack.value];
+      const typeKeys = Array.isArray(types) ? ["default"] : Object.keys(types);
+      type.innerHTML = typeKeys.map(t => `<option value="${t}">${t === 'default' ? '標準' : t}</option>`).join('');
+      renderChart();
+    }
+
+    function getMatrix() {
+      const a = action.value;
+      const p = position.value;
+      const v = vs.style.display === 'none' ? 'default' : vs.value;
+      const s = stack.value;
+      const t = type.value;
+      const raw = Array.isArray(rangeData[a][p][v][s]) ? rangeData[a][p][v][s] : rangeData[a][p][v][s][t];
+      const map = {};
+      raw.forEach(row => row.forEach(cell => {
+        if (cell) {
+          const [hand, pct] = cell.split(":");
+          map[hand.trim()] = Math.round(parseInt(pct) / 10) / 10;
+        }
+      }));
+      return ranks.split('').map((r1, i) => ranks.split('').map((r2, j) => {
+        const key = i === j ? r1 + r2 : i < j ? r1 + r2 + 's' : r2 + r1 + 'o';
+        return map[key] ?? "";
+      }));
+    }
+
+    function renderChart() {
+      const matrix = getMatrix();
+      const tbody = document.querySelector(".grid tbody");
+      const table = tbody.parentElement;
+      const newBody = document.createElement("tbody");
+      for (let i = 0; i < 13; i++) {
+        const tr = document.createElement("tr");
+        for (let j = 0; j < 13; j++) {
+          const td = document.createElement("td");
+          const r1 = ranks[i], r2 = ranks[j];
+          const hand = i === j ? r1 + r2 : i < j ? r1 + r2 + 's' : r2 + r1 + 'o';
+          td.textContent = hand;
+          const val = matrix[i][j];
+          td.className = i === j ? 'cell-red' : i < j ? 'cell-green' : 'cell-blue';
+          if (evData[hand]) {
+            td.title = `EV: ${evData[hand].ev.toFixed(2)}\n勝率: ${evData[hand].winRate.toFixed(1)}%\n${evData[hand].note ?? ''}`;
+          }
+          tr.appendChild(td);
+        }
+        newBody.appendChild(tr);
+      }
+      table.replaceChild(newBody, tbody);
+    }
+
+    document.getElementById("action").onchange = updateDependentSelectors;
+    document.getElementById("position").onchange = updateVsStackType;
+    document.getElementById("vs").onchange = updateVsStackType;
+    document.getElementById("stack").onchange = updateVsStackType;
+    document.getElementById("type").onchange = renderChart;
+
+    loadData();
+document.getElementById("action").dispatchEvent(new Event("change"));
+  </script>
 </body>
 </html>

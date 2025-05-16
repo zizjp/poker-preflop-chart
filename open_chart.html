@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Openレンジチャート - プリフロップ戦略</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #0f172a;
+      color: #fff;
+      font-size: 16px;
+    }
+    header {
+      background: #1e293b;
+      padding: 1rem;
+      font-size: 1.4rem;
+      text-align: center;
+      font-weight: bold;
+    }
+    .topbar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+    }
+    .topbar label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.85rem;
+      width: 100%;
+      max-width: 300px;
+    }
+    .topbar select {
+      background: #334155;
+      color: white;
+      border: 1px solid #475569;
+      padding: 0.6rem;
+      border-radius: 4px;
+      font-size: 1rem;
+      margin-top: 0.3rem;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+    }
+    .grid {
+      width: 100%;
+      overflow-x: auto;
+      background: #1e293b;
+      padding: 0.5rem;
+      border-radius: 8px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    td {
+      width: 7.69vw;
+      height: 7.69vw;
+      max-width: 60px;
+      max-height: 60px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 0.9rem;
+      font-weight: bold;
+      border: 1px solid #334155;
+      box-sizing: border-box;
+      padding: 0;
+    }
+    .cell-green { background: #22c55e; color: #000; } /* call */
+    .cell-red { background: #ef4444; color: #fff; }   /* raise */
+    .cell-blue { background: #3b82f6; color: #fff; }  /* fold */
+    #info {
+      padding: 1rem;
+      background: #1e293b;
+      border-top: 1px solid #334155;
+      text-align: center;
+      font-size: 1rem;
+      min-height: 3rem;
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <header>Openレンジチャート - プリフロップ戦略</header>
+  <nav style="text-align:center; background:#1e293b; padding:0.5rem;">
+    <a href="vs_chart.html" style="color:#38bdf8; text-decoration:none; font-size:0.9rem;">→ VSレンジチャートへ切り替え</a>
+  </nav>
+  <div class="topbar">
+    <label>📍 ポジション<select id="position"></select></label>
+    <label>💰 スタック<select id="stack"></select></label>
+    <label>🎮 プレイスタイル<select id="type"></select></label>
+  </div>
+  <div class="container">
+    <div class="grid">
+      <table><tbody></tbody></table>
+    </div>
+  </div>
+  <div id="info"></div>
+  <script>
+    const ranks = "AKQJT98765432";
+    let rangeData = {}, evData = {};
+    const position = document.getElementById("position");
+    const stack = document.getElementById("stack");
+    const type = document.getElementById("type");
+
+    async function loadData() {
+      rangeData = await fetch('range_open.json').then(r => r.json());
+      evData = await fetch('ev_data_ai.json').then(r => r.json());
+      populateSelectors();
+    }
+
+    function populateSelectors() {
+      const actions = Object.keys(rangeData);
+      const pList = actions.length ? Object.keys(rangeData[actions[0]]) : [];
+      position.innerHTML = pList.filter(p => p !== "BB").map(p => `<option value="${p}">${p}</option>`).join('');
+      updateStackType();
+    }
+
+    function updateStackType() {
+      const a = Object.keys(rangeData)[0];
+      const p = position.value;
+      const stacks = Object.keys(rangeData[a][p] || {});
+      const previousStack = stack.value;
+      const previousType = type.value;
+
+      stack.innerHTML = stacks.sort((a,b)=>a-b).map(s => `<option value="${s}">${s}BB</option>`).join('');
+      stack.value = previousStack && stacks.includes(previousStack) ? previousStack : stacks[0];
+
+      const selectedStack = stack.value;
+      const typeKeys = Object.keys(rangeData[a][p][selectedStack] || {});
+      type.innerHTML = typeKeys.map(t => `<option value="${t}">${t}</option>`).join('');
+      type.value = previousType && typeKeys.includes(previousType) ? previousType : typeKeys[0];
+
+      renderChart();
+    }
+
+    function getMatrix() {
+      const a = Object.keys(rangeData)[0];
+      const p = position.value;
+      const s = stack.value;
+      const t = type.value;
+      const raw = rangeData[a][p][s]?.[t] || [];
+      const map = {};
+
+      raw.forEach(row => row.forEach(cell => {
+        if (cell) {
+          const [hand, percent] = cell.split(":");
+          const pct = parseInt(percent);
+          if (!hand || isNaN(pct)) return;
+          let action = "", note = "";
+
+          if (pct >= 90) {
+            action = "raise"; note = "常にオープン";
+          } else if (pct >= 60) {
+            action = "raise"; note = "高頻度オープン";
+          } else if (pct >= 30) {
+            action = "call";  note = "混合戦略";
+          } else if (pct >= 1) {
+            action = "fold";  note = "低頻度使用";
+          } else {
+            action = "fold";  note = "基本フォールド";
+          }
+
+          map[hand.trim()] = { action, note, pct };
+        }
+      }));
+
+      return ranks.split('').map((r1, i) => ranks.split('').map((r2, j) => {
+        const key = i === j ? r1 + r2 : i < j ? r1 + r2 + 's' : r2 + r1 + 'o';
+        return map[key] ?? { action: "fold", note: "未定義: フォールド", pct: 0 };
+      }));
+    }
+
+    function renderChart() {
+      const matrix = getMatrix();
+      const tbody = document.querySelector(".grid tbody");
+      const table = tbody.parentElement;
+      const newBody = document.createElement("tbody");
+
+      for (let i = 0; i < 13; i++) {
+        const tr = document.createElement("tr");
+        for (let j = 0; j < 13; j++) {
+          const td = document.createElement("td");
+          const r1 = ranks[i], r2 = ranks[j];
+          const hand = i === j ? r1 + r2 : i < j ? r1 + r2 + 's' : r2 + r1 + 'o';
+          td.textContent = hand;
+
+          const cellData = matrix[i][j];
+          if (cellData) {
+            td.className = cellData.action === "raise" ? 'cell-red'
+                          : cellData.action === "call" ? 'cell-green'
+                          : 'cell-blue';
+
+            let tooltip = `${cellData.note}（参加率: ${cellData.pct}%）`;
+            if (evData[hand]) {
+              tooltip += `\nEV: ${evData[hand].ev.toFixed(2)}\n勝率: ${evData[hand].winRate.toFixed(1)}%`;
+              if (evData[hand].note) tooltip += `\n${evData[hand].note}`;
+            }
+            td.onclick = () => {
+              document.getElementById("info").textContent = tooltip.replace(/\n/g, ' / ');
+            };
+          }
+          tr.appendChild(td);
+        }
+        newBody.appendChild(tr);
+      }
+
+      table.replaceChild(newBody, tbody);
+    }
+
+    document.getElementById("position").onchange = updateStackType;
+    document.getElementById("stack").onchange = updateStackType;
+    document.getElementById("type").onchange = renderChart;
+
+    loadData();
+  </script>
+</body>
+</html>
