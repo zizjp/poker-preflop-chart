@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>プリフロップレンジチャート v0.2 - AI補完</title>
+  <title>プリフロップレンジチャート v0.3 - AI補完</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
   <style>
     body {
@@ -65,8 +65,7 @@
       z-index: 10;
     }
     .ev-popup {
-      display: none;
-      font-size: 0.6rem;
+  font-size: 0.85rem;
       background: rgba(255,255,255,0.95);
       position: absolute;
       bottom: 0;
@@ -87,16 +86,33 @@
   </style>
 </head>
 <body>
-  <header>プリフロップレンジチャート <span style="font-size: 0.9rem; opacity: 0.8;">v0.2</span> - AI補完</header>
+  <header>プリフロップレンジチャート <span style="font-size: 0.9rem; opacity: 0.8;">v0.3</span> - AI補完</header>
   <main>
     <div class="controls">
-      <select id="action"></select>
-      <select id="position"></select>
-      <select id="vs"></select>
-      <select id="stack"></select>
-      <select id="type"></select>
-      <label><input type="checkbox" id="toggleEV" /> EV表示</label>
-    </div>
+  <div style="display:flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;">
+    <label for="action">アクション <span title="プリフロップでの動作の種類（例: open, call, 3bet）">ℹ️</span></label>
+    <select id="$1" style="min-width: 120px"></select>
+  </div>
+  <div style="display:flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;">
+    <label for="position">ポジション <span title="自分の座っている位置（例: UTG, CO, BTN）">ℹ️</span></label>
+    <select id="position"></select>
+  </div>
+  <div style="display:flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;" id="vsContainer">
+    <label for="vs">対戦相手 <span title="どの位置の相手に対するアクションか（例: vs BB, vs CO）">ℹ️</span></label>
+    <select id="vs"></select>
+  </div>
+  <div style="display:flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;">
+    <label for="stack">スタックサイズ <span title="現在のスタック（持ち点）をBB単位で指定">ℹ️</span></label>
+    <select id="stack"></select>
+  </div>
+  <div style="display:flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;" id="typeContainer">
+    <label for="type">スタイル <span title="プレイ傾向の違い（例: タイト、ルーズ）">ℹ️</span></label>
+    <select id="type"></select>
+  </div>
+  <div style="display:flex; align-items: center;">
+    <label for="toggleEV"><input type="checkbox" id="toggleEV" style="margin-right: 0.4rem;" /> EV表示</label>
+  </div>
+</div>
     <div class="chart-container" id="chart"></div>
     <section style="max-width: 1024px; margin: 1rem auto; font-size: 0.9rem; color: #555; padding: 0 1rem;">
       <h2 style="font-size: 1.1rem; margin-bottom: 0.3rem;">色の意味</h2>
@@ -170,8 +186,8 @@
       const position = positionSelect.value;
       const vsOptions = Object.keys(rangeData[action]?.[position] || {});
       const isOpen = vsOptions.length === 1 && vsOptions[0] === "default";
-      vsSelect.style.display = isOpen ? "none" : "inline-block";
-      typeSelect.style.display = isOpen ? "none" : "inline-block";
+      document.getElementById("vsContainer").style.display = isOpen ? "none" : "flex";
+      document.getElementById("typeContainer").style.display = isOpen ? "none" : "flex";
       vsSelect.innerHTML = vsOptions.map(v => `<option value="${v}">${v}</option>`).join('');
       const selectedVs = vsSelect.value || vsOptions[0];
       const stackOptions = Object.keys(rangeData[action][position][selectedVs] || {});
@@ -243,6 +259,14 @@ const typeOptions = Array.isArray(typeSource)
     toggleEV.addEventListener("change", updateChart);
 
     loadData();
-  </script>
+  document.addEventListener("click", (e) => {
+  const cell = e.target.closest("td");
+  if (cell && cell.querySelector(".ev-popup")) {
+    cell.classList.toggle("show-ev");
+  } else {
+    document.querySelectorAll("td.show-ev").forEach(td => td.classList.remove("show-ev"));
+  }
+});
+</script>
 </body>
 </html>
