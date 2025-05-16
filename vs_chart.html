@@ -87,10 +87,29 @@
       margin: 1rem auto;
       display: block;
     }
+    .back-to-index {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: #1e293b;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  border: 1px solid #334155;
+  font-size: 0.9rem;
+  z-index: 999;
+  transition: background 0.3s ease;
+}
+
+.back-to-index:hover {
+  background: #334155;
+}
   </style>
 </head>
 <body>
   <header>VSレンジチャート - プリフロップ戦略</header>
+  <a href="index.html" class="back-to-index">🏠 メニューへ戻る</a>
   <nav style="text-align:center; background:#1e293b; padding:0.5rem;">
     <a href="open_chart.html" style="color:#38bdf8; text-decoration:none; font-size:1rem;">→ Openレンジチャートへ切り替え</a>
   </nav>
