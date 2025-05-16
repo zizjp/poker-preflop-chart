@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>プリフロップチャート（AI補完）</title>
+  <title>AI補完プリフロップチャート</title>
   <style>
     body {
       font-family: "Helvetica Neue", sans-serif;
@@ -17,11 +17,10 @@
       color: white;
       padding: 1rem;
       text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     main {
       padding: 1rem;
-      max-width: 960px;
+      max-width: 1000px;
       margin: auto;
     }
     .controls {
@@ -31,13 +30,17 @@
       justify-content: center;
       margin-bottom: 1rem;
     }
-    select, button {
+    select, button, label {
       padding: 0.6rem;
       font-size: 1rem;
       border-radius: 6px;
       border: 1px solid #ccc;
-      min-width: 120px;
       background: #fff;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
     }
     .chart-container {
       overflow-x: auto;
@@ -45,34 +48,45 @@
       border: 1px solid #ccc;
       border-radius: 8px;
       padding: 1rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     table {
       border-collapse: collapse;
-      width: 100%;
-      table-layout: fixed;
+      margin: auto;
     }
     th, td {
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
+      width: 48px;
+      height: 48px;
       text-align: center;
-      padding: 0.6rem;
-      font-size: 0.85rem;
+      vertical-align: middle;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #333;
       position: relative;
-      transition: background 0.3s;
     }
-    tbody tr:nth-child(odd) {
-      background-color: #fefefe;
+    td[data-value="1"] {
+      background-color: #2ecc71; /* 緑 */
+      color: white;
     }
-    tbody tr:nth-child(even) {
-      background-color: #f0f0f0;
+    td[data-value="0.5"] {
+      background-color: #f1c40f; /* 黄 */
+      color: #000;
     }
-    td:hover {
-      background-color: #e0f7fa;
+    td[data-value="0"] {
+      background-color: #ecf0f1; /* グレー */
     }
     .ev-popup {
-      font-size: 0.7rem;
-      color: #666;
-      margin-top: 0.2rem;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      font-size: 0.6rem;
+      background: rgba(255,255,255,0.8);
+      color: #000;
+      display: none;
+    }
+    td.show-ev .ev-popup {
+      display: block;
     }
     @media (max-width: 600px) {
       .controls {
@@ -93,6 +107,9 @@
       <select id="vs"></select>
       <select id="stack"></select>
       <select id="type"></select>
+      <div class="toggle">
+        <label><input type="checkbox" id="toggleEV" /> EV/勝率を表示</label>
+      </div>
     </div>
     <div class="chart-container" id="chart"></div>
   </main>
@@ -104,6 +121,7 @@
     const vsSelect = document.getElementById("vs");
     const stackSelect = document.getElementById("stack");
     const typeSelect = document.getElementById("type");
+    const toggleEV = document.getElementById("toggleEV");
     const chartContainer = document.getElementById("chart");
 
     async function loadData() {
@@ -132,7 +150,6 @@
       const vsOptions = Object.keys(rangeData[action]?.[position] || {});
 
       const isOpen = vsOptions.length === 1 && vsOptions[0] === "default";
-
       vsSelect.style.display = isOpen ? "none" : "inline-block";
       typeSelect.style.display = isOpen ? "none" : "inline-block";
 
@@ -157,7 +174,7 @@
       return map[type] || type;
     }
 
-    function updateChart() {
+    function getMatrix() {
       const action = actionSelect.value;
       const position = positionSelect.value;
       const vsOptions = Object.keys(rangeData[action]?.[position] || {});
@@ -165,21 +182,34 @@
       const stack = stackSelect.value;
       const type = typeSelect.value;
 
-      let matrix;
       if (vs === "default") {
-        const stackKeys = Object.keys(rangeData[action]?.[position]?.[vs] || {});
-        const typeKeys = Object.keys(rangeData[action]?.[position]?.[vs]?.[stack] || {});
-        matrix = rangeData?.[action]?.[position]?.[vs]?.[stack]?.[typeKeys[0]] || [];
+        const typeKey = Object.keys(rangeData[action]?.[position]?.[vs]?.[stack] || {})[0];
+        return rangeData[action][position][vs][stack][typeKey] || [];
       } else {
-        matrix = rangeData?.[action]?.[position]?.[vs]?.[stack]?.[type] || [];
+        return rangeData[action][position][vs][stack][type] || [];
       }
+    }
+
+    function getHandLabel(row, col) {
+      const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+      const r1 = ranks[row], r2 = ranks[col];
+      if (row === col) return r1 + r2;
+      return row < col ? r1 + r2 + "s" : r2 + r1 + "o";
+    }
+
+    function updateChart() {
+      const matrix = getMatrix();
+      const showEV = toggleEV.checked;
+      const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
 
       let html = "<table><tbody>";
-      for (const row of matrix) {
+      for (let row = 0; row < 13; row++) {
         html += "<tr>";
-        for (const cell of row) {
-          const evInfo = evData?.[cell] ? `<div class='ev-popup'>EV: ${evData[cell].ev.toFixed(2)}<br>勝率: ${evData[cell].winRate.toFixed(1)}%</div>` : "";
-          html += `<td>${cell || ""}${evInfo}</td>`;
+        for (let col = 0; col < 13; col++) {
+          const hand = getHandLabel(row, col);
+          const value = matrix[row]?.[col] || "";
+          const evInfo = evData?.[hand] ? `EV: ${evData[hand].ev.toFixed(2)}<br>勝率: ${evData[hand].winRate.toFixed(1)}%` : "";
+          html += `<td data-value="${value}" class="${showEV ? 'show-ev' : ''}">${hand}<div class='ev-popup'>${evInfo}</div></td>`;
         }
         html += "</tr>";
       }
@@ -187,23 +217,12 @@
       chartContainer.innerHTML = html;
     }
 
-    actionSelect.addEventListener("change", () => {
-      updateDependentSelectors();
-      updateChart();
-    });
-    positionSelect.addEventListener("change", () => {
-      updateVsStackType();
-      updateChart();
-    });
-    vsSelect.addEventListener("change", () => {
-      updateVsStackType();
-      updateChart();
-    });
-    stackSelect.addEventListener("change", () => {
-      updateVsStackType();
-      updateChart();
-    });
+    actionSelect.addEventListener("change", () => { updateDependentSelectors(); updateChart(); });
+    positionSelect.addEventListener("change", () => { updateVsStackType(); updateChart(); });
+    vsSelect.addEventListener("change", () => { updateVsStackType(); updateChart(); });
+    stackSelect.addEventListener("change", () => { updateVsStackType(); updateChart(); });
     typeSelect.addEventListener("change", updateChart);
+    toggleEV.addEventListener("change", updateChart);
 
     loadData();
   </script>
