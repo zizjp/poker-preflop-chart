@@ -88,11 +88,20 @@
       <div class="status" id="selected-status"></div>
       <button class="reset-button" onclick="resetSelection()">選び直す</button>
       <div id="output" class="result"></div>
+      <div class="result">
+        <strong>アクション凡例:</strong><br>
+        <ul style="text-align: left; line-height: 1.6; font-size: 0.95rem; padding-left: 1.2rem;">
+          <li><strong>H</strong>（Hit）：もう1枚引く</li>
+          <li><strong>S</strong>（Stand）：そのまま立ち止まる</li>
+          <li><strong>D</strong>（Double）：賭け金を倍にして1枚だけ引く</li>
+          <li><strong>P</strong>（Split）：同じカード2枚を分けて2つの手にする</li>
+        </ul>
+      </div>
     </section>
   </main>
 
   <script>
-    const cardFaces = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const cardFaces = ['A','2','3','4','5','6','7','8','9','10'];
 
     function renderCardButtons(containerId, type) {
       const container = document.getElementById(containerId);
