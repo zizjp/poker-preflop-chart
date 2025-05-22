@@ -85,13 +85,33 @@
       background: #1e293b;
       border-top: 1px solid #334155;
     }
+  #floating-search {
+      position: sticky;
+      top: 0;
+      background: #0f172a;
+      padding: 0.5rem;
+      text-align: center;
+      z-index: 100;
+    }
+    #floating-search input {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: white;
+      width: 90%;
+      max-width: 300px;
+    }
   </style>
 </head>
 <body>
   <header>Openレンジチャート - ヨコサワ版</header>
+  <div id="floating-search">
+    <input id="search" type="text" placeholder="例: KJs">
+  </div>
   <div class="controls">
-    <label for="search">ハンド検索:</label><br>
-    <input id="search" type="text" placeholder="例: KJs"><br><br>
+
     <label for="stack">スタックサイズ:</label><br>
     <select id="stack">
       <option value="100" selected>100BB</option>
