@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Openレンジチャート - プリフロップ戦略</title>
+  <title>Openレンジチャート - ヨコサワ版</title>
   <style>
     body {
       margin: 0;
@@ -15,230 +15,191 @@
     header {
       background: #1e293b;
       padding: 1rem;
-      font-size: 1.4rem;
       text-align: center;
       font-weight: bold;
+      font-size: 1.4rem;
     }
-    .topbar {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
+    .controls {
       padding: 1rem;
-      background: #1e293b;
-      border-bottom: 1px solid #334155;
+      text-align: center;
     }
-    .topbar label {
-      display: flex;
-      flex-direction: column;
-      font-size: 0.85rem;
-      width: 100%;
-      max-width: 300px;
-    }
-    .topbar select {
-      background: #334155;
-      color: white;
-      border: 1px solid #475569;
+    select, input {
       padding: 0.6rem;
-      border-radius: 4px;
-      font-size: 1rem;
-      margin-top: 0.3rem;
-    }
-    .container {
-      display: flex;
-      flex-direction: column;
-      padding: 1rem;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: white;
+      width: 90%;
+      max-width: 300px;
+      margin-top: 0.5rem;
     }
     .grid {
-      width: 100%;
+      padding: 1rem;
       overflow-x: auto;
-      background: #1e293b;
-      padding: 0.5rem;
-      border-radius: 8px;
+      display: flex;
+      justify-content: center;
     }
     table {
       border-collapse: collapse;
-      width: 100%;
+      width: auto;
+      table-layout: fixed;
+      min-width: 520px;
     }
     td {
-      width: 7.69vw;
-      height: 7.69vw;
-      max-width: 60px;
-      max-height: 60px;
+      width: 8vw;
+      height: 8vw;
+      max-width: 44px;
+      max-height: 44px;
       text-align: center;
       vertical-align: middle;
-      font-size: 0.9rem;
+      font-size: 0.65rem;
       font-weight: bold;
       border: 1px solid #334155;
-      box-sizing: border-box;
-      padding: 0;
     }
-    .cell-green { background: #22c55e; color: #000; } /* call */
-    .cell-red { background: #ef4444; color: #fff; }   /* raise */
-    .cell-blue { background: #3b82f6; color: #fff; }  /* fold */
+    @media (max-width: 480px) {
+      td {
+        width: 9vw;
+        height: 9vw;
+        font-size: 0.55rem;
+      }
+      header {
+        font-size: 1.2rem;
+      }
+    }
     #info {
-      padding: 1rem;
-      background: #1e293b;
-      border-top: 1px solid #334155;
-      text-align: center;
-      font-size: 1rem;
-      min-height: 3rem;
+      width: 100%;
+      box-sizing: border-box;
       position: sticky;
       bottom: 0;
-      z-index: 10;
+      background: #1e293b;
+      padding: 1rem;
+      text-align: center;
+      border-top: 1px solid #334155;
+      font-size: 1rem;
     }
-    .back-to-index {
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  background: #1e293b;
-  color: #fff;
-  padding: 0.6rem 1rem;
-  text-decoration: none;
-  border-radius: 0.5rem;
-  border: 1px solid #334155;
-  font-size: 0.9rem;
-  z-index: 999;
-  transition: background 0.3s ease;
-}
-
-.back-to-index:hover {
-  background: #334155;
-}
+    #ranking {
+      text-align: center;
+      font-size: 0.85rem;
+      padding: 0.5rem;
+      background: #1e293b;
+      border-top: 1px solid #334155;
+    }
   </style>
 </head>
 <body>
-  <header>Openレンジチャート - プリフロップ戦略</header>
-  <a href="index.html" class="back-to-index">🏠 メニューへ戻る</a>
-  <nav style="text-align:center; background:#1e293b; padding:0.5rem;">
-    <a href="vs_chart.html" style="color:#38bdf8; text-decoration:none; font-size:0.9rem;">→ VSレンジチャートへ切り替え</a>
-  </nav>
-  <div class="topbar">
-    <label>📍 ポジション<select id="position"></select></label>
-    <label>💰 スタック<select id="stack"></select></label>
-    <label>🎮 プレイスタイル<select id="type"></select></label>
+  <header>Openレンジチャート - ヨコサワ版</header>
+  <div class="controls">
+    <label for="search">ハンド検索:</label><br>
+    <input id="search" type="text" placeholder="例: KJs"><br><br>
+    <label for="stack">スタックサイズ:</label><br>
+    <select id="stack">
+      <option value="100" selected>100BB</option>
+    </select><br><br>
+    <label for="style">スタイル:</label><br>
+    <select id="style">
+      <option value="standard" selected>standard</option>
+    </select><br><br>
+    <label for="position">ポジション:</label><br>
+    <select id="position">
+      <option value="UTG">UTG</option>
+      <option value="HJ">HJ</option>
+      <option value="CO">CO</option>
+      <option value="BTN" selected>BTN</option>
+      <option value="SB">SB</option>
+    </select>
   </div>
-  <div class="container">
-    <div class="grid">
-      <table><tbody></tbody></table>
-    </div>
+  <div id="ranking">EVトップ10: </div>
+  <div class="grid">
+    <table><tbody></tbody></table>
   </div>
-  <div id="info"></div>
+  <div id="info">ポジション / ハンド をタップすると参加率が表示されます</div>
   <script>
     const ranks = "AKQJT98765432";
-    let rangeData = {}, evData = {};
-    const position = document.getElementById("position");
-    const stack = document.getElementById("stack");
-    const type = document.getElementById("type");
+    let rangeData, evData;
 
     async function loadData() {
-      rangeData = await fetch('range_open.json').then(r => r.json());
+      rangeData = await fetch('range_open_yokosawa.json').then(r => r.json());
       evData = await fetch('ev_data_ai.json').then(r => r.json());
-      populateSelectors();
+      const pos = document.getElementById("position").value;
+      renderChart(pos);
+      showTopEV(pos);
     }
 
-    function populateSelectors() {
-      const actions = Object.keys(rangeData);
-      const pList = actions.length ? Object.keys(rangeData[actions[0]]) : [];
-      position.innerHTML = pList.filter(p => p !== "BB").map(p => `<option value="${p}">${p}</option>`).join('');
-      updateStackType();
-    }
-
-    function updateStackType() {
-      const a = Object.keys(rangeData)[0];
-      const p = position.value;
-      const stacks = Object.keys(rangeData[a][p] || {});
-      const previousStack = stack.value;
-      const previousType = type.value;
-
-      stack.innerHTML = stacks.sort((a,b)=>a-b).map(s => `<option value="${s}">${s}BB</option>`).join('');
-      stack.value = previousStack && stacks.includes(previousStack) ? previousStack : stacks[0];
-
-      const selectedStack = stack.value;
-      const typeKeys = Object.keys(rangeData[a][p][selectedStack] || {});
-      type.innerHTML = typeKeys.map(t => `<option value="${t}">${t}</option>`).join('');
-      type.value = previousType && typeKeys.includes(previousType) ? previousType : typeKeys[0];
-
-      renderChart();
-    }
-
-    function getMatrix() {
-      const a = Object.keys(rangeData)[0];
-      const p = position.value;
-      const s = stack.value;
-      const t = type.value;
-      const raw = rangeData[a][p][s]?.[t] || [];
-      const map = {};
-
-      raw.forEach(row => row.forEach(cell => {
-        if (cell) {
-          const [hand, percent] = cell.split(":");
-          const pct = parseInt(percent);
-          if (!hand || isNaN(pct)) return;
-          let action = "", note = "";
-
-          if (pct >= 90) {
-            action = "raise"; note = "常にオープン";
-          } else if (pct >= 60) {
-            action = "raise"; note = "高頻度オープン";
-          } else if (pct >= 30) {
-            action = "call";  note = "混合戦略";
-          } else if (pct >= 1) {
-            action = "fold";  note = "低頻度使用";
-          } else {
-            action = "fold";  note = "基本フォールド";
-          }
-
-          map[hand.trim()] = { action, note, pct };
-        }
-      }));
-
-      return ranks.split('').map((r1, i) => ranks.split('').map((r2, j) => {
-        const key = i === j ? r1 + r2 : i < j ? r1 + r2 + 's' : r2 + r1 + 'o';
-        return map[key] ?? { action: "fold", note: "未定義: フォールド", pct: 0 };
-      }));
-    }
-
-    function renderChart() {
-      const matrix = getMatrix();
-      const tbody = document.querySelector(".grid tbody");
-      const table = tbody.parentElement;
-      const newBody = document.createElement("tbody");
+    function renderChart(position) {
+      const stack = document.getElementById("stack").value;
+      const style = document.getElementById("style").value;
+      const matrix = rangeData.open[position][stack][style];
+      const tbody = document.querySelector("table tbody");
+      tbody.innerHTML = "";
+      const search = document.getElementById("search")?.value.toUpperCase().trim();
 
       for (let i = 0; i < 13; i++) {
         const tr = document.createElement("tr");
         for (let j = 0; j < 13; j++) {
           const td = document.createElement("td");
-          const r1 = ranks[i], r2 = ranks[j];
-          const hand = i === j ? r1 + r2 : i < j ? r1 + r2 + 's' : r2 + r1 + 'o';
-          td.textContent = hand;
+          const cell = matrix[i][j];
+          const [handRaw, pctStr] = cell.split(":");
+          const hand = handRaw.trim();
+          const pct = parseInt(pctStr);
 
-          const cellData = matrix[i][j];
-          if (cellData) {
-            td.className = cellData.action === "raise" ? 'cell-red'
-                          : cellData.action === "call" ? 'cell-green'
-                          : 'cell-blue';
+          const r1 = ranks[i];
+          const r2 = ranks[j];
+          const key = i === j ? r1 + r2 : i < j ? r1 + r2 + "s" : r2 + r1 + "o";
 
-            let tooltip = `${cellData.note}（参加率: ${cellData.pct}%）`;
-            if (evData[hand]) {
-              tooltip += `\nEV: ${evData[hand].ev.toFixed(2)}\n勝率: ${evData[hand].winRate.toFixed(1)}%`;
-              if (evData[hand].note) tooltip += `\n${evData[hand].note}`;
-            }
-            td.onclick = () => {
-              document.getElementById("info").textContent = tooltip.replace(/\n/g, ' / ');
-            };
+          td.textContent = key;
+          if (search && key.toUpperCase() === search) {
+            td.style.outline = "3px solid yellow";
           }
+
+          const ev = evData[key]?.ev;
+          const baseRed = ["#7f1d1d", "#b91c1c", "#dc2626", "#ef4444", "#f87171"];
+          const evIndex = ev !== undefined ? Math.min(4, Math.floor((ev + 1) * 2.5)) : 2;
+          td.style.background = pct >= 1 ? baseRed[evIndex] : "#1e3a8a";
+          td.style.color = '#fff';
+
+          td.onclick = () => {
+            const info = document.getElementById("info");
+            let detail = `${position} / ${key} 参加率: ${pct}%`;
+            if (evData && evData[key]) {
+              detail += ` / EV: ${evData[key].ev.toFixed(2)} / 勝率: ${evData[key].winRate.toFixed(1)}%`;
+            }
+            info.textContent = detail;
+          };
           tr.appendChild(td);
         }
-        newBody.appendChild(tr);
+        tbody.appendChild(tr);
       }
-
-      table.replaceChild(newBody, tbody);
     }
 
-    document.getElementById("position").onchange = updateStackType;
-    document.getElementById("stack").onchange = updateStackType;
-    document.getElementById("type").onchange = renderChart;
+    function showTopEV(position) {
+      const stack = document.getElementById("stack").value;
+      const style = document.getElementById("style").value;
+      const matrix = rangeData.open[position][stack][style];
+      const hands = [];
+      for (let i = 0; i < 13; i++) {
+        for (let j = 0; j < 13; j++) {
+          const [h] = matrix[i][j].split(":");
+          if (evData[h]) hands.push({ hand: h, ev: evData[h].ev });
+        }
+      }
+      hands.sort((a, b) => b.ev - a.ev);
+      const top = hands.slice(0, 10).map(x => `${x.hand} (${x.ev.toFixed(2)})`).join(" / ");
+      document.getElementById("ranking").textContent = `EVトップ10: ${top}`;
+    }
+
+    ["position", "stack", "style", "search"].forEach(id => {
+      document.getElementById(id).addEventListener("change", () => {
+        const pos = document.getElementById("position").value;
+        renderChart(pos);
+        showTopEV(pos);
+      });
+      document.getElementById(id).addEventListener("input", () => {
+        const pos = document.getElementById("position").value;
+        renderChart(pos);
+        showTopEV(pos);
+      });
+    });
 
     loadData();
   </script>
