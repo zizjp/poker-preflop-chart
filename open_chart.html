@@ -103,9 +103,28 @@
       width: 90%;
       max-width: 300px;
     }
+    .common-header {
+  background: #1e293b;
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border-bottom: 1px solid #334155;
+}
+
+.common-header a.title-link {
+  color: #fff;
+  text-decoration: none;
+}
+
+.common-header a.title-link:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
   </style>
 </head>
 <body>
+  <div id="header-container"></div>
   <header>Openレンジチャート - ヨコサワ版</header>
   <div id="floating-search">
     <input id="search" type="text" placeholder="例: KJs">
@@ -223,5 +242,12 @@
 
     loadData();
   </script>
+  <script>
+  document.getElementById('header-container').innerHTML = `
+    <header class="common-header">
+      <a href="index.html" class="title-link">ポーカーツール</a>
+    </header>
+  `;
+</script>
 </body>
 </html>

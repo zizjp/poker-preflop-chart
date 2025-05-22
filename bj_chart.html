@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ブラックジャック基本戦略チャート</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #ffffff;
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e293b;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    nav {
+      background: #1e293b;
+      text-align: center;
+      padding: 0.5rem;
+    }
+    nav a {
+      color: #38bdf8;
+      margin: 0 10px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    main {
+      padding: 1rem;
+    }
+    .input-section {
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .card-button {
+      width: 48px;
+      height: 48px;
+      margin: 0.3rem;
+      background: #334155;
+      color: white;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .status {
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+    .reset-button {
+      margin-top: 1rem;
+      background: #ef4444;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .result {
+      background: #0f172a;
+      padding: 1rem;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>ブラックジャック基本戦略チャート</header>
+  <nav>
+    <a href="index.html">ホームに戻る</a>
+  </nav>
+  <main>
+    <section class="input-section">
+      <p><strong>自分のカードを選択：</strong></p>
+      <div id="player-cards"></div>
+      <p><strong>ディーラーのカードを選択：</strong></p>
+      <div id="dealer-cards"></div>
+      <div class="status" id="selected-status"></div>
+      <button class="reset-button" onclick="resetSelection()">選び直す</button>
+      <div id="output" class="result"></div>
+    </section>
+  </main>
+
+  <script>
+    const cardFaces = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+    function renderCardButtons(containerId, type) {
+      const container = document.getElementById(containerId);
+      cardFaces.forEach(face => {
+        const btn = document.createElement('button');
+        btn.className = 'card-button';
+        btn.innerText = face;
+        btn.addEventListener('click', () => selectCard(face, type));
+        container.appendChild(btn);
+      });
+    }
+
+    renderCardButtons('player-cards', 'player');
+    renderCardButtons('dealer-cards', 'dealer');
+
+    let playerCards = [];
+    let dealerCard = null;
+
+    const strategy = {
+  // ハードハンド
+  '17': fullAction('S'),
+  '16': partialAction('S', 6, 'H'),
+  '15': partialAction('S', 6, 'H'),
+  '14': partialAction('S', 6, 'H'),
+  '13': partialAction('S', 6, 'H'),
+  '12': {'2':'H','3':'H','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','10':'H','A':'H'},
+  '11': fullAction('D', 'A', 'H'),
+  '10': partialAction('D', 9, 'H'),
+  '9': {'2':'H','3':'D','4':'D','5':'D','6':'D','7':'H','8':'H','9':'H','10':'H','A':'H'},
+  '8': fullAction('H'),
+  // ソフトハンド（Aを含む）
+  'A2': {'2':'H','3':'H','4':'H','5':'D','6':'D','7':'H','8':'H','9':'H','10':'H','A':'H'},
+  'A3': {'2':'H','3':'H','4':'H','5':'D','6':'D','7':'H','8':'H','9':'H','10':'H','A':'H'},
+  'A4': {'2':'H','3':'H','4':'D','5':'D','6':'D','7':'H','8':'H','9':'H','10':'H','A':'H'},
+  'A5': {'2':'H','3':'H','4':'D','5':'D','6':'D','7':'H','8':'H','9':'H','10':'H','A':'H'},
+  'A6': {'2':'H','3':'D','4':'D','5':'D','6':'D','7':'H','8':'H','9':'H','10':'H','A':'H'},
+  'A7': {'2':'S','3':'D','4':'D','5':'D','6':'D','7':'S','8':'S','9':'H','10':'H','A':'H'},
+  'A8': fullAction('S'),
+  'A9': fullAction('S'),
+  // ペア
+  '22': partialAction('P', 6, 'H'),
+  '33': partialAction('P', 6, 'H'),
+  '44': {'2':'H','3':'H','4':'H','5':'P','6':'P','7':'H','8':'H','9':'H','10':'H','A':'H'},
+  '55': partialAction('D', 9, 'H'),
+  '66': partialAction('P', 6, 'H'),
+  '77': partialAction('P', 6, 'H'),
+  '88': fullAction('P'),
+  '99': {'2':'P','3':'P','4':'P','5':'P','6':'P','7':'S','8':'P','9':'P','10':'S','A':'S'},
+  '1010': fullAction('S'),
+  'JJ': fullAction('S'),
+  'QQ': fullAction('S'),
+  'KK': fullAction('S'),
+  'AA': fullAction('P')
+};
+
+function fullAction(value, exceptKey = null, exceptValue = null) {
+  const keys = ['2','3','4','5','6','7','8','9','10','A'];
+  const obj = {};
+  keys.forEach(k => obj[k] = (exceptKey && k === exceptKey) ? exceptValue : value);
+  return obj;
+}
+
+function partialAction(firstValue, upTo, restValue) {
+  const keys = ['2','3','4','5','6','7','8','9','10','A'];
+  const obj = {};
+  keys.forEach(k => {
+    const num = k === 'A' ? 11 : parseInt(k);
+    obj[k] = (num <= upTo) ? firstValue : restValue;
+  });
+  return obj;
+}
+
+    function selectCard(value, type) {
+      if (type === 'player') {
+        if (playerCards.length < 2) {
+          playerCards.push(value);
+        }
+      } else if (type === 'dealer') {
+        dealerCard = value;
+      }
+      updateStatus();
+      if (playerCards.length === 2 && dealerCard) {
+        evaluate();
+      }
+    }
+
+    function updateStatus() {
+      let totalText = '';
+      if (playerCards.length === 2) {
+        const handValue = formatHand(playerCards);
+        if (!handValue.includes('A') && !handValue.includes(playerCards[0] + playerCards[1])) {
+          totalText = `（合計: ${handValue}）`;
+        } else if (handValue.includes('A') && playerCards.length === 2 && playerCards[0] !== playerCards[1]) {
+          const alt = playerCards.find(c => c !== 'A');
+          const altVal = parseInt(alt || '0');
+          totalText = `（合計: ${altVal + 11} / ${altVal + 1}）`;
+        } else if (playerCards[0] === playerCards[1]) {
+          const val = playerCards[0] === 'A' ? 'A' : (parseInt(playerCards[0]) * 2);
+          totalText = `（合計: ${val}）`;
+        }
+      }
+      document.getElementById('selected-status').innerText =
+        `あなた: ${playerCards.join(', ')} ${totalText} / ディーラー: ${dealerCard || '未選択'}`;
+    }
+
+    function resetSelection() {
+      playerCards = [];
+      dealerCard = null;
+      document.getElementById('selected-status').innerText = '';
+      document.getElementById('output').innerText = '';
+    }
+
+    function evaluate() {
+      let hand = formatHand(playerCards);
+      let action = strategy[hand] && strategy[hand][dealerCard];
+      const output = document.getElementById('output');
+      if (action) {
+        output.innerHTML = `<strong>推奨アクション:</strong> <span>${action}</span>`;
+      } else {
+        output.innerHTML = `戦略が見つかりません (${hand} vs ${dealerCard})`;
+      }
+    }
+
+    function formatHand(cards) {
+      if (cards[0] === cards[1]) {
+        return cards[0] + cards[1];
+      } else if (cards.includes('A')) {
+        let other = cards.find(c => c !== 'A') || 'A';
+        return 'A' + other;
+      } else {
+        let total = cards.reduce((sum, c) => sum + parseInt(c), 0);
+        return total.toString();
+      }
+    }
+  </script>
+</body>
+</html>

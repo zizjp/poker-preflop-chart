@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ポーカーツール - メインメニュー</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ポーカーツール - メニュー</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -14,9 +14,12 @@
       padding: 2rem;
     }
 
-    h1 {
-      margin-bottom: 2rem;
-      font-size: 2rem;
+    header {
+      background: #1e293b;
+      padding: 1rem;
+      font-size: 1.6rem;
+      font-weight: bold;
+      border-bottom: 1px solid #334155;
     }
 
     .menu {
@@ -24,7 +27,7 @@
       flex-direction: column;
       gap: 1rem;
       max-width: 400px;
-      margin: 0 auto;
+      margin: 2rem auto;
     }
 
     .menu a {
@@ -49,11 +52,13 @@
   </style>
 </head>
 <body>
-  <h1>ポーカーツール メニュー</h1>
+  <header>ポーカーツール メニュー</header>
+
   <div class="menu">
     <a href="open_chart.html">📊 オープンレンジチャート</a>
-    <a href="vs_chart.html">🤜 VSレンジチャート</a>
-    <a href="training.html">🎯 トレーニングモード</a>
+    <a href="poker_terms.html">📘 ポーカー用語集</a>
+    <a href="training_mode.html">🎯 トレーニングモード</a>
+    <a href="bj_chart.html">🃏 ブラックジャックチャート</a>
     <a href="about.html">ℹ️ このツールについて</a>
   </div>
 
