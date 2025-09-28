@@ -1,15 +1,14 @@
-/* app.js — 8-max / BBアンティ向けレンジ可視化（安定版）
-   ・ヘッダー行/列つき 14×14 を構築（うち 13×13=169 がセル）
-   ・各セルに data-hand（AA, AKs, AKo ...）を必ず付与
-   ・モードはタブ（#tabOpen / #tabVs3 / #tabOverview）で管理
-   ・ranges.json の "20:UTG" / "20:UTG:BTN" 形式に合わせて着色
-   ・未定義は fold（灰）
+/* app.js — レンジ可視化（いまのUIを崩さない安定版）
+   - 13×13=169セル＋ヘッダーを安定描画（data-hand を必ず付与）
+   - open / vs3（fold/call/jam）に対応
+   - 総覧（ポジ別）: 最前ポジで open 可の色を付与（data-overview / --ov-color）
+   - フルスクリーン関係のコードは一切ナシ
 */
 
 (() => {
   const RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
 
-  // ---- 要素参照
+  // ---- 要素参照（存在しない場合は null で耐える）
   const $ = (s) => document.querySelector(s);
   const matrixEl = $("#matrix");
   const stackSel = $("#stackSel");
@@ -24,82 +23,79 @@
   const rangeList = $("#rangeList");
 
   // ---- 状態
-  let MODE = "open"; // "open" | "vs3" | "overview"
-  let RANGES = null; // ranges.json を読み込んで格納
+  let MODE = "open";   // "open" | "vs3" | "overview"
+  let RANGES = null;   // ranges.json の中身（{ stacks?, positions?, grid: {...} }）
 
   // ---- 起動
   document.addEventListener("DOMContentLoaded", init);
 
   async function init(){
-    // グリッド構築（常に 169 セル＋ヘッダーを生成）
-    buildMatrix();
+    buildMatrix();               // 先に盤面を確実に作る
+    RANGES = await loadRanges(); // ranges.json → window.RANGES の順で拾う
 
-    // データ読み込み
-    RANGES = await loadRanges("./ranges.json");
+    // 既存UIに合わせて、タブのクリックで MODE をセット
+    if (tabOpen) tabOpen.addEventListener("click", () => setMode("open"));
+    if (tabVs3)  tabVs3 .addEventListener("click", () => setMode("vs3"));
+    if (tabOverview) tabOverview.addEventListener("click", () => setMode("overview"));
 
-    // セレクト初期化
-    initSelectors(RANGES);
+    // セレクタ変更で再描画
+    [stackSel, posSel, oppSel].forEach(el => el && el.addEventListener("change", render));
 
-    // タブイベント
-    [tabOpen, tabVs3, tabOverview].forEach(btn => {
-      btn.addEventListener("click", () => {
-        [tabOpen, tabVs3, tabOverview].forEach(b => b.setAttribute("aria-pressed","false"));
-        btn.setAttribute("aria-pressed","true");
-        MODE = (btn === tabOpen) ? "open" : (btn === tabVs3 ? "vs3" : "overview");
-        oppWrap.style.display = MODE === "vs3" ? "" : "none";
-        // 凡例の切替
-        legendAction.style.display   = (MODE === "overview") ? "none" : "";
-        legendOverview.style.display = (MODE === "overview") ? "" : "none";
-        render();
-      });
-    });
-
-    // セレクト変更
-    [stackSel, posSel, oppSel].forEach(sel => sel.addEventListener("change", render));
-
-    // 初期描画
+    // 初回描画
     render();
 
-    // フォーカス移動やポップアップ等は既存の実装があればそこへ接続してOK
+    // デバッグユーティリティを公開（任意）
+    window.__rangeDebug = {
+      count: () => matrixEl ? matrixEl.querySelectorAll(".cell").length : 0,
+      cell: (hand) => document.querySelector(`.cell[data-hand="${hand}"]`),
+      state: (hand) => {
+        const c = document.querySelector(`.cell[data-hand="${hand}"]`);
+        return c ? c.dataset.state : null;
+      },
+      dumpNonFold: () => {
+        const arr = [];
+        document.querySelectorAll("#matrix .cell").forEach(c => {
+          if (c.dataset.state !== "fold") arr.push([c.dataset.hand, c.dataset.state]);
+        });
+        return arr;
+      }
+    };
   }
 
-  // ---- ranges.json 読込
-  async function loadRanges(path){
-    const res = await fetch(path);
-    if(!res.ok) throw new Error("ranges.json 読み込みに失敗");
-    const data = await res.json();
-    // そのまま返す。参照は data.grid[key] とする
-    return data;
+  function setMode(next){
+    MODE = next;
+    // 既存の aria-pressed を使っているUIでも崩れないよう、あれば同期
+    [tabOpen, tabVs3, tabOverview].forEach(b => b && b.setAttribute("aria-pressed", "false"));
+    if (next === "open" && tabOpen) tabOpen.setAttribute("aria-pressed", "true");
+    if (next === "vs3"  && tabVs3)  tabVs3 .setAttribute("aria-pressed", "true");
+    if (next === "overview" && tabOverview) tabOverview.setAttribute("aria-pressed", "true");
+
+    if (oppWrap)        oppWrap.style.display        = (next === "vs3") ? "" : "none";
+    if (legendAction)   legendAction.style.display   = (next === "overview") ? "none" : "";
+    if (legendOverview) legendOverview.style.display = (next === "overview") ? "" : "none";
+
+    render();
   }
 
-  // ---- セレクト初期化
-  function initSelectors(data){
-    const stacks = data.stacks || ["20","30","40"];
-    const positions = data.positions || ["UTG","UTG+1","MP","HJ","CO","BTN","SB","BB"];
-    // スタック
-    stackSel.innerHTML = stacks.map(v => `<option value="${v}">${v}BB</option>`).join("");
-    // ポジション
-    posSel.innerHTML = positions.map(v => `<option value="${v}">${v}</option>`).join("");
-    // 3bet元
-    oppSel.innerHTML = positions.map(v => `<option value="${v}">${v}</option>`).join("");
-
-    // 既定値
-    stackSel.value = stacks[0];
-    posSel.value   = positions[0];
-    oppSel.value   = positions[1] || positions[0]; // とりあえず前方の誰か
+  // ---- ranges 読み込み（fetch → window.RANGES フォールバック）
+  async function loadRanges(){
+    // fetch優先（GitHub Pages/ローカルでキャッシュを避ける）
+    try {
+      const res = await fetch("./ranges.json", { cache: "no-store" });
+      if (res.ok) return await res.json();
+    } catch (_e) { /* noop */ }
+    // window.RANGES があればそれを使う
+    if (window.RANGES) return window.RANGES;
+    // 最低限の空データ
+    return { stacks: [], positions: [], grid: {} };
   }
 
-  // ---- 14×14（角＋ヘッダー＋169セル）を構築
+  // ---- 14×14（角＋列ヘッダー＋行ヘッダー＋169セル）を構築
   function buildMatrix(){
-    if(!matrixEl){ console.warn("[#matrix] が見つかりません"); return; }
-
-    matrixEl.setAttribute("role","grid");
-    matrixEl.setAttribute("aria-label","ハンドレンジ 13x13 グリッド");
-    matrixEl.style.display = "grid";
-    // 先頭列はヘッダー用に auto、残り13列がセル
-    matrixEl.style.gridTemplateColumns = "auto repeat(13, var(--cell-size))";
-    matrixEl.style.gridAutoRows = "var(--cell-size)";
+    if (!matrixEl) { console.warn("[#matrix] が見つかりません"); return; }
     matrixEl.innerHTML = "";
+    matrixEl.setAttribute("role", "grid");
+    matrixEl.setAttribute("aria-label", "ハンドレンジ 13x13 グリッド");
 
     // 左上コーナー
     const corner = document.createElement("div");
@@ -107,143 +103,166 @@
     matrixEl.appendChild(corner);
 
     // 上ヘッダー（列名）
-    for(let j=0;j<13;j++){
+    for (let j=0; j<13; j++){
       const hdr = document.createElement("div");
       hdr.className = "hdr";
       hdr.textContent = RANKS[j];
-      hdr.setAttribute("aria-hidden","true");
+      hdr.setAttribute("aria-hidden", "true");
       matrixEl.appendChild(hdr);
     }
 
-    // 各行：行ヘッダー + 13セル
-    for(let i=0;i<13;i++){
-      // 行ヘッダー
-      const h = document.createElement("div");
-      h.className = "hdr";
-      h.textContent = RANKS[i];
-      h.setAttribute("aria-hidden","true");
-      matrixEl.appendChild(h);
+    // 各行：行ヘッダー＋13セル
+    for (let i=0; i<13; i++){
+      const lh = document.createElement("div");
+      lh.className = "hdr";
+      lh.textContent = RANKS[i];
+      lh.setAttribute("aria-hidden", "true");
+      matrixEl.appendChild(lh);
 
-      // 13セル
-      for(let j=0;j<13;j++){
+      for (let j=0; j<13; j++){
         const cell = document.createElement("div");
         cell.className = "cell";
-        const hand = handAt(i,j); // AA, AKs, AKo...
-        cell.dataset.hand = hand;       // ★ 必ず付与
+        const hand = handAt(i, j);      // AA / AKs / AKo
+        cell.dataset.hand = hand;       // ★ 必ず付与（レンジ参照のキー）
         cell.dataset.row  = String(i);
         cell.dataset.col  = String(j);
-        cell.dataset.state = "fold";    // 既定 fold（灰）
-        cell.setAttribute("role","gridcell");
-        cell.setAttribute("tabindex","-1");
-        cell.title = hand;              // ホバー確認
-
-        // ラベルを中に見せたいなら↓（不要なら削ってOK）
+        cell.dataset.state = "fold";    // 既定: 未定義は fold
+        cell.setAttribute("role", "gridcell");
+        cell.setAttribute("tabindex", "-1");
+        cell.title = hand;
+        // ラベルを表示したいなら以下を残す（不要なら消してOK）
         cell.textContent = hand;
 
         matrixEl.appendChild(cell);
       }
     }
-
-    // 確認ログ（必要ならON）
-    // console.debug("cells(含ヘッダー)=", matrixEl.children.length, "hands=", matrixEl.querySelectorAll('.cell').length);
   }
 
-  // ---- i<j 側を suited とする慣習での表記
-  function handAt(i,j){
-    const r1 = RANKS[i];
-    const r2 = RANKS[j];
-    if(i === j) return r1 + r2;              // AA, KK...
-    const hi = i < j ? r1 : r2;              // 行が上ほど強い
+  // ---- hand 正規表記（上三角=suited）
+  function handAt(i, j){
+    const r1 = RANKS[i], r2 = RANKS[j];
+    if (i === j) return r1 + r2;         // AA, KK, ...
+    const hi = i < j ? r1 : r2;
     const lo = i < j ? r2 : r1;
-    const suited = i < j;                    // 対角線より上が suited
+    const suited = i < j;                // 対角線より上を suited とする慣習
     return hi + lo + (suited ? "s" : "o");
+  }
+
+  // ---- 位置配列（データに無ければ grid のキーから推定）
+  function positionsOrder(){
+    if (RANGES && Array.isArray(RANGES.positions) && RANGES.positions.length) return RANGES.positions;
+    const set = new Set();
+    const g = (RANGES && RANGES.grid) || {};
+    Object.keys(g).forEach(k => {
+      const parts = k.split(":"); // "20:UTG" / "20:UTG:BTN"
+      if (parts[1]) set.add(parts[1]);
+      if (parts[2]) set.add(parts[2]);
+    });
+    const std = ["UTG","UTG+1","MP","HJ","CO","BTN","SB","BB"];
+    return [...set].sort((a,b) => std.indexOf(a) - std.indexOf(b));
   }
 
   // ---- 描画
   function render(){
-    if(!matrixEl || !RANGES) return;
-    const stack = stackSel.value;    // "20" | "30" | "40"
-    const pos   = posSel.value;      // "UTG" など
-    const opp   = oppSel.value;      // "MP" など
-    const grid  = RANGES.grid || {};
+    if (!matrixEl) return;
 
-    // まず全セルを fold/初期化
+    // 既存UIの「ラジオ/セレクト」モードにも一応対応（互換）
+    const radioMode = document.querySelector('input[name="mode"]:checked')?.value;
+    if (radioMode) {
+      MODE = (radioMode === "open" ? "open" :
+             (radioMode.startsWith("vs3") ? "vs3" :
+              (radioMode === "overview" ? "overview" : MODE)));
+    }
+    // タブの aria-pressed が使われている場合も拾っておく
+    if (tabOpen?.getAttribute("aria-pressed") === "true") MODE = "open";
+    if (tabVs3 ?.getAttribute("aria-pressed") === "true") MODE = "vs3";
+    if (tabOverview?.getAttribute("aria-pressed") === "true") MODE = "overview";
+
+    const stack = (stackSel && stackSel.value) || "20";
+    const pos   = (posSel   && posSel.value)   || "UTG";
+    const opp   = (oppSel   && oppSel.value)   || "BTN";
+    const grid  = (RANGES && RANGES.grid) || {};
+
+    // リセット
     matrixEl.querySelectorAll(".cell").forEach(c => {
-      c.dataset.state = "fold";
-      c.removeAttribute("data-overview");
+    if (MODE === "overview") {
+        // 総覧では fold を付けない（!important の衝突回避）
+        c.removeAttribute("data-state");
+    } else {
+        c.dataset.state = "fold";
+    }
+    c.removeAttribute("data-overview");
+    c.style.removeProperty("--ov-color");
     });
+    matrixEl.classList.toggle("is-overview", MODE === "overview");
 
-    if(MODE === "overview"){
-      // 各ハンドについて「このスタックで最も前のポジから open できるポジ」を塗る
-      const order = RANGES.positions || ["UTG","UTG+1","MP","HJ","CO","BTN","SB","BB"];
+    // ---- 総覧（ポジ別）
+    if (MODE === "overview"){
+      const order = positionsOrder();
+      const colorMap = {
+        "UTG":  "hsl(210 70% 40%)",
+        "UTG+1":"hsl(220 70% 40%)",
+        "MP":   "hsl(240 60% 44%)",
+        "HJ":   "hsl(250 60% 44%)",
+        "CO":   "hsl(300 60% 46%)",
+        "BTN":  "hsl(320 60% 46%)",
+        "SB":   "hsl( 30 70% 46%)",
+        "BB":   "hsl( 45 70% 46%)"
+      };
       matrixEl.querySelectorAll(".cell").forEach(c => {
         const h = c.dataset.hand;
         let earliest = null;
-        for(const p of order){
+        for (const p of order){
           const key = `${stack}:${p}`;
-          if(grid[key] && grid[key][h] && grid[key][h].open){
-            earliest = p; break;
-          }
+          const row = grid[key] && grid[key][h];
+          if (row && row.open) { earliest = p; break; }
         }
         c.dataset.overview = earliest || "empty";
+        if (earliest) c.style.setProperty("--ov-color", colorMap[earliest] || "hsl(0 0% 50%)");
       });
-      // リスト更新
-      updateRangeListOverview(stack);
+      if (rangeList) rangeList.textContent = `スタック ${stack}BB：各ハンドの「最前ポジで open 可」を色分け表示`;
       return;
     }
 
-    if(MODE === "open"){
+    // ---- open（オープンレンジ）
+    if (MODE === "open"){
       const key = `${stack}:${pos}`;
       const table = grid[key] || {};
       matrixEl.querySelectorAll(".cell").forEach(c => {
         const h = c.dataset.hand;
-        if(table[h] && table[h].open){
-          c.dataset.state = "open";
-        }
+        const row = table[h];
+        if (row && row.open) c.dataset.state = "open";
       });
-      updateRangeListOpen(stack, pos);
+      if (rangeList) {
+        const list = Object.keys(table).filter(h => table[h]?.open).sort();
+        rangeList.textContent = list.join(" ");
+      }
       return;
     }
 
-    // MODE === "vs3"（3bet対応）
+    // ---- vs3（対3bet：fold/call/jam）
     const keyVs = `${stack}:${pos}:${opp}`;
     const tableVs = grid[keyVs] || {};
     matrixEl.querySelectorAll(".cell").forEach(c => {
       const h = c.dataset.hand;
       const row = tableVs[h];
-      if(!row) return; // 未定義は fold
-      // 優先順位: jam > call > fold（どれか一個しか立ってない前提）
-      if(row.vs3bet_jam)  c.dataset.state = "vs3bet_jam";
-      else if(row.vs3bet_call) c.dataset.state = "vs3bet_call";
-      else if(row.vs3bet_fold) c.dataset.state = "vs3bet_fold";
+      if (!row) return;            // 未定義は fold のまま
+      if (row.vs3bet_jam)  c.dataset.state = "vs3bet_jam";
+      else if (row.vs3bet_call) c.dataset.state = "vs3bet_call";
+      else if (row.vs3bet_fold) c.dataset.state = "vs3bet_fold";
     });
-    updateRangeListVs3(stack, pos, opp);
-  }
-
-  // ---- 右側のレンジ一覧（軽量版）
-  function updateRangeListOpen(stack, pos){
-    const key = `${stack}:${pos}`;
-    const table = (RANGES.grid && RANGES.grid[key]) || {};
-    const list = Object.keys(table).filter(h => table[h].open).sort();
-    rangeList.textContent = list.join(" ");
-  }
-  function updateRangeListVs3(stack, pos, opp){
-    const key = `${stack}:${pos}:${opp}`;
-    const t = (RANGES.grid && RANGES.grid[key]) || {};
-    const jam  = [], call = [], fold = [];
-    for(const [h, act] of Object.entries(t)){
-      if(act.vs3bet_jam)  jam.push(h);
-      else if(act.vs3bet_call) call.push(h);
-      else if(act.vs3bet_fold) fold.push(h);
+    if (rangeList) {
+      const jam = [], call = [], fold = [];
+      for (const [h, a] of Object.entries(tableVs)) {
+        if (a.vs3bet_jam)  jam.push(h);
+        else if (a.vs3bet_call) call.push(h);
+        else if (a.vs3bet_fold) fold.push(h);
+      }
+      rangeList.textContent = [
+        jam.length  ? `jam:  ${jam.sort().join(" ")}`  : "",
+        call.length ? `call: ${call.sort().join(" ")}` : "",
+        fold.length ? `fold: ${fold.sort().join(" ")}` : ""
+      ].filter(Boolean).join("\n");
     }
-    rangeList.textContent = [
-      jam.length ? `jam: ${jam.sort().join(" ")}` : "",
-      call.length ? `call: ${call.sort().join(" ")}` : "",
-      fold.length ? `fold: ${fold.sort().join(" ")}` : ""
-    ].filter(Boolean).join("\n");
   }
-  function updateRangeListOverview(stack){
-    rangeList.textContent = `スタック ${stack}BB の「最前ポジからオープン可」を色分け表示中。`;
-  }
-
 })();
