@@ -191,10 +191,73 @@
     .panel { box-shadow: none; }
     .two { grid-template-columns: 1fr; }
   }
+
+  /* --- 使い方（ヘルプ） --- */
+.help { margin: 12px 0 14px; }
+.help details {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 8px 12px;
+}
+.help summary {
+  cursor: pointer;
+  font-weight: 700;
+  outline: none;
+  list-style: none;
+}
+.help summary::-webkit-details-marker { display: none; }
+.help .tips { color: var(--muted); font-size: .95rem; }
+.help kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  padding: 0 6px;
+  font-size: .85rem;
+}
+@media print {
+  .help { display: none !important; } /* 印刷時は非表示 */
+}
 </style>
 </head>
 <body>
 <header>
+  <section class="wrap help" aria-label="使い方">
+  <details id="helpDetails">
+    <summary>使い方（クリックで開閉）</summary>
+    <div class="tips">
+      <p>上部の <b>スタック/ポジション/表示モード</b> を切り替えると、グリッドの色分けが変わります。</p>
+      <ul>
+        <li>モード：<b>オープンレンジ</b> と <b>3bet対応</b>（3bet元を選択）</li>
+        <li>セルをタップ/Enterで：そのハンドの <b>全スタック/全ポジションの状況</b> をポップ表示</li>
+        <li>右パネル：現在のレンジ一覧と <b>「レンジの考え方(メモ)」</b>（保存可）</li>
+        <li>Import/Export：JSONで保存/読込（不正JSONはエラー表示）</li>
+        <li>拡大：<b>拡大</b>ボタンでグリッドを全画面表示</li>
+      </ul>
+
+      <p><b>キーボード操作</b></p>
+      <ul>
+        <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd>：セル移動</li>
+        <li><kbd>Enter</kbd>/<kbd>Space</kbd>：詳細ポップを開く</li>
+        <li><kbd>Esc</kbd>：ポップを閉じる</li>
+      </ul>
+
+      <p><b>色の意味</b></p>
+      <ul>
+        <li>緑：オープン（2BB）</li>
+        <li>灰：3bet来たら降り</li>
+        <li>青：3bet来たらコール</li>
+        <li>赤：3bet来たら4bet jam</li>
+        <li>枠のみ：未定義（=フォールド扱い）</li>
+      </ul>
+
+      <p><b>メモの保存先</b>：ページ内のデータオブジェクト（Exportにも含まれます）</p>
+    </div>
+  </details>
+  </section>
+
   <div class="wrap">
     <div class="row" role="toolbar" aria-label="ヘッダー操作">
       <h1>ポーカートーナメント レンジ可視化</h1>
@@ -677,6 +740,19 @@ document.querySelector('.cell[data-idx="0"]').focus();
 document.addEventListener("keydown",(e)=>{
   if (e.key==="Escape") pop.style.display="none";
 });
+
+/* --- ヘルプの開閉状態を記憶（localStorage） --- */
+(function(){
+  const d = document.getElementById('helpDetails');
+  if (!d) return;
+  const key = 'help.open';
+  // 復元
+  try { d.open = localStorage.getItem(key) === '1'; } catch(_) {}
+  // 変更を保存
+  d.addEventListener('toggle', ()=>{
+    try { localStorage.setItem(key, d.open ? '1' : '0'); } catch(_) {}
+  });
+})();
 
 </script>
 </body>
