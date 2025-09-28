@@ -64,12 +64,33 @@ button{ cursor:pointer; }
   border-radius:8px; font-size:var(--cell-font); user-select:none; outline:none; }
 .cell:focus-visible{ box-shadow:0 0 0 3px var(--focus); }
 
-/* === アクション別カラーリング === */
-.cell[data-state="open"] { background:var(--c-open) !important; border:2px solid var(--c-open-b) !important; }
-.cell[data-state="vs3bet_fold"] { background:var(--c-fold) !important; border:2px solid var(--c-fold-b) !important; }
-.cell[data-state="vs3bet_call"] { background:var(--c-call) !important; border:2px solid var(--c-call-b) !important; }
-.cell[data-state="vs3bet_jam"]  { background:var(--c-jam) !important;  border:2px solid var(--c-jam-b) !important; }
-.cell:not([data-state]):not([data-overview]){ background:var(--c-undef); }
+/* === アクション別カラーリング（両対応） === */
+.cell[data-state="open"] {
+  background: var(--c-open) !important;
+  border: 2px solid var(--c-open-b) !important;
+}
+/* fold */
+.cell[data-state="fold"],
+.cell[data-state="vs3bet_fold"] {
+  background: var(--c-fold) !important;
+  border: 2px solid var(--c-fold-b) !important;
+}
+/* call */
+.cell[data-state="call"],
+.cell[data-state="vs3bet_call"] {
+  background: var(--c-call) !important;
+  border: 2px solid var(--c-call-b) !important;
+}
+/* jam */
+.cell[data-state="jam"],
+.cell[data-state="vs3bet_jam"]  {
+  background: var(--c-jam) !important;
+  border: 2px solid var(--c-jam-b) !important;
+}
+/* 未定義 */
+.cell:not([data-state]):not([data-overview]) {
+  background: var(--c-undef);
+}
 
 /* === 総覧カラーリング（ポジション別） === */
 .cell[data-overview="UTG"]   { background:color-mix(in srgb,var(--p-utg) 18%, transparent); border:2px solid var(--p-utg); }
