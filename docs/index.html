@@ -3,261 +3,121 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>レンジ可視化（8-max / BBアンティ）</title>
+<title>レンジ可視化（8-max / BBアンティ / 完全版）</title>
 <style>
-  /* ========== テーマ変数（ダーク/ライト両対応） ========== */
-  :root {
-    --bg: #ffffff;
-    --fg: #1a1a1a;
-    --muted: #6b7280;
-    --panel: #f6f7fb;
-    --border: #e5e7eb;
-    --focus: #2563eb;
-
-    --c-open: #10b98122;      /* 緑: open 背景 */
-    --c-open-b: #059669;      /* 緑: open 枠 */
-    --c-fold: #6b728010;      /* 灰: vs3bet_fold 背景 */
-    --c-fold-b: #6b7280;      /* 灰: vs3bet_fold 枠 */
-    --c-call: #60a5fa22;      /* 青: vs3bet_call 背景 */
-    --c-call-b: #2563eb;      /* 青: vs3bet_call 枠 */
-    --c-jam: #f8717122;       /* 赤: vs3bet_jam 背景 */
-    --c-jam-b: #ef4444;       /* 赤: vs3bet_jam 枠 */
-
-    --cell-size: 2.4rem;      /* モバイルでの1セル最小サイズ */
-    --cell-font: 0.85rem;
-    --radius: 10px;
-    --shadow: 0 8px 24px rgba(0,0,0,0.08);
+  /* ========== テーマ & 共通 ========== */
+  :root{
+    --bg:#ffffff; --fg:#1a1a1a; --muted:#6b7280; --panel:#f6f7fb; --border:#e5e7eb; --focus:#2563eb;
+    --c-open:#10b98122; --c-open-b:#059669;
+    --c-fold:#6b728010; --c-fold-b:#6b7280;
+    --c-call:#60a5fa22; --c-call-b:#2563eb;
+    --c-jam:#f8717122;  --c-jam-b:#ef4444;
+    --cell-size:2.4rem; --cell-font:.85rem; --radius:10px; --shadow:0 8px 24px rgba(0,0,0,.08);
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0b0c10;
-      --fg: #e5e7eb;
-      --muted: #9ca3af;
-      --panel: #111318;
-      --border: #1f2937;
-
-      --c-open: #04785733;
-      --c-open-b: #34d399;
-      --c-fold: #4b556320;
-      --c-fold-b: #9ca3af;
-      --c-call: #1e3a8a33;
-      --c-call-b: #93c5fd;
-      --c-jam: #7f1d1d33;
-      --c-jam-b: #fca5a5;
-
-      --shadow: 0 8px 28px rgba(0,0,0,0.45);
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0b0c10; --fg:#e5e7eb; --muted:#9ca3af; --panel:#111318; --border:#1f2937;
+      --c-open:#04785733; --c-open-b:#34d399;
+      --c-fold:#4b556320; --c-fold-b:#9ca3af;
+      --c-call:#1e3a8a33; --c-call-b:#93c5fd;
+      --c-jam:#7f1d1d33;  --c-jam-b:#fca5a5;
+      --shadow:0 8px 28px rgba(0,0,0,.45);
     }
   }
+  /* レイアウト安定のため全体に border-box */
+  *,*::before,*::after{ box-sizing:border-box; }
 
-  html, body { height: 100%; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--fg);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-    line-height: 1.45;
-  }
+  html,body{height:100%;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";line-height:1.45;}
 
-  /* ========== レイアウト ========== */
-  header {
-    position: sticky; top: 0; z-index: 10;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
+  header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);}
+  .wrap{max-width:1100px;margin:0 auto;padding:12px 16px;}
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+  h1{font-size:1.05rem;margin:0 12px 0 0;font-weight:700;}
+  select,button,input[type="text"],textarea{
+    color:var(--fg);background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:.95rem;
   }
-  .wrap {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 12px 16px;
-  }
-  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-  h1 {
-    font-size: 1.05rem; margin: 0 12px 0 0; font-weight: 700;
-  }
-  select, button, input[type="text"], textarea {
-    color: var(--fg); background: var(--panel);
-    border: 1px solid var(--border); border-radius: 10px;
-    padding: 8px 10px; font-size: 0.95rem;
-  }
-  button { cursor: pointer; }
-  .seg {
-    display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
-  }
-  .seg button {
-    background: transparent; border: none; padding: 8px 12px; font-weight: 600;
-  }
-  .seg button[aria-pressed="true"] {
-    background: var(--panel); outline: 2px solid transparent;
-  }
-  .spacer { flex: 1; }
+  button{cursor:pointer;}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .seg button{background:transparent;border:none;padding:8px 12px;font-weight:600;}
+  .seg button[aria-pressed="true"]{background:var(--panel);outline:2px solid transparent;}
+  .spacer{flex:1;}
 
   /* ========== グリッド ========== */
-  .grid-wrap {
-    margin: 14px auto 10px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px;
-    box-shadow: var(--shadow);
+  .grid-wrap{margin:14px auto 10px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:10px;box-shadow:var(--shadow);}
+  .matrix{display:grid;grid-template-columns:auto repeat(13,var(--cell-size));grid-auto-rows:var(--cell-size);gap:4px;overflow-x:auto;}
+  .corner{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem;}
+  .hdr{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--muted);user-select:none;}
+  .cell{position:relative;display:flex;align-items:center;justify-content:center;border:1px dashed var(--border);border-radius:8px;font-size:var(--cell-font);user-select:none;outline:none;}
+  .cell[data-state="open"]{background:var(--c-open);border:2px solid var(--c-open-b);}
+  .cell[data-state="fold"]{background:var(--c-fold);border:2px solid var(--c-fold-b);}
+  .cell[data-state="call"]{background:var(--c-call);border:2px solid var(--c-call-b);}
+  .cell[data-state="jam"] {background:var(--c-jam); border:2px solid var(--c-jam-b);}
+  .cell:focus-visible{box-shadow:0 0 0 3px var(--focus);}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;color:var(--muted);font-size:.9rem;}
+  .badge{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:14px;height:14px;border-radius:4px;border:2px solid transparent;}
+  .dot.open{background:var(--c-open);border-color:var(--c-open-b);}
+  .dot.fold{background:var(--c-fold);border-color:var(--c-fold-b);}
+  .dot.call{background:var(--c-call);border-color:var(--c-call-b);}
+  .dot.jam{ background:var(--c-jam); border-color:var(--c-jam-b);}
+
+  /* 未定義セルの薄灰はトグルで制御（デフォOFF） */
+  :root{ --c-undef:#9ca3af12; }
+  @media (prefers-color-scheme: dark){ :root{ --c-undef:#ffffff10; } }
+  body.show-undef .cell:not([data-state]){ background:var(--c-undef); }
+
+  /* 値デバッグ表示（O/J/C/F/- を右下に） */
+  body.debug-vals .cell::after{
+    content:attr(data-debug);
+    position:absolute;bottom:2px;right:4px;font-size:.65rem;color:var(--muted);
   }
-  .matrix {
-    display: grid;
-    grid-template-columns: auto repeat(13, var(--cell-size));
-    grid-auto-rows: var(--cell-size);
-    gap: 4px;
-    overflow-x: auto;
-  }
-  .corner {
-    display: flex; align-items: center; justify-content: center;
-    color: var(--muted); font-size: 0.85rem;
-  }
-  .hdr {
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; color: var(--muted);
-    user-select: none;
-  }
-  .cell {
-    display: flex; align-items: center; justify-content: center;
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    font-size: var(--cell-font);
-    user-select: none;
-    outline: none;
-  }
-  .cell[data-state="open"]      { background: var(--c-open); border: 2px solid var(--c-open-b); }
-  .cell[data-state="fold"]      { background: var(--c-fold); border: 2px solid var(--c-fold-b); }
-  .cell[data-state="call"]      { background: var(--c-call); border: 2px solid var(--c-call-b); }
-  .cell[data-state="jam"]       { background: var(--c-jam);  border: 2px solid var(--c-jam-b); }
-  .cell:focus-visible           { box-shadow: 0 0 0 3px var(--focus); }
-  .legend {
-    display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; color: var(--muted);
-    font-size: 0.9rem;
-  }
-  .badge { display:inline-flex; align-items:center; gap:6px; }
-  .dot {
-    width: 14px; height: 14px; border-radius: 4px; border: 2px solid transparent;
-  }
-  .dot.open { background: var(--c-open); border-color: var(--c-open-b);}
-  .dot.fold { background: var(--c-fold); border-color: var(--c-fold-b);}
-  .dot.call { background: var(--c-call); border-color: var(--c-call-b);}
-  .dot.jam  { background: var(--c-jam);  border-color: var(--c-jam-b);}
 
   /* ========== サマリー & メモ ========== */
-  .two {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  .panel {
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 10px; box-shadow: var(--shadow);
-  }
-  .panel h2 { margin: 0 0 8px; font-size: 1rem; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-  .list {
-    display: block; max-height: 140px; overflow: auto; padding: 8px; background: rgba(0,0,0,0.03);
-    border: 1px dashed var(--border); border-radius: 8px; font-size: 0.92rem;
-  }
-  textarea { width: 100%; min-height: 120px; resize: vertical;  box-sizing: border-box; }
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:10px;box-shadow:var(--shadow);}
+  .panel h2{margin:0 0 8px;font-size:1rem;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;}
+  .list{display:block;max-height:140px;overflow:auto;padding:8px;background:rgba(0,0,0,.03);border:1px dashed var(--border);border-radius:8px;font-size:.92rem;}
+  textarea{width:100%;min-height:120px;resize:vertical;box-sizing:border-box;} /* はみ出し対策 */
 
   /* ========== ポップオーバー ========== */
-  .popover {
-    position: fixed; z-index: 50; min-width: 240px; max-width: 320px;
-    background: var(--bg); color: var(--fg); border: 1px solid var(--border);
-    border-radius: 10px; box-shadow: var(--shadow); padding: 10px; display: none;
-  }
-  .popover h3 { margin: 0 0 6px; font-size: 0.95rem; }
-  .popover .small { font-size: 0.85rem; color: var(--muted); }
-  .popover .kv { font-size: 0.92rem; }
-  .popover .kv b { display:inline-block; min-width: 68px; }
+  .popover{position:fixed;z-index:50;min-width:240px;max-width:320px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:10px;display:none;}
+  .popover h3{margin:0 0 6px;font-size:.95rem;}
+  .popover .small{font-size:.85rem;color:var(--muted);}
+  .popover .kv{font-size:.92rem;}
+  .popover .kv b{display:inline-block;min-width:68px;}
 
   /* ========== フッター操作 ========== */
-  .ops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-  .file {
-    display: none;
-  }
+  .ops{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .file{display:none;}
+
+  /* ========== ヘルプ（使い方） ========== */
+  .help{margin:12px 0 14px;}
+  .help details{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:8px 12px;}
+  .help summary{cursor:pointer;font-weight:700;outline:none;list-style:none;}
+  .help summary::-webkit-details-marker{display:none;}
+  .help .tips{color:var(--muted);font-size:.95rem;}
+  .help kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;padding:0 6px;font-size:.85rem;}
 
   /* ========== モバイル最適化 ========== */
-  @media (max-width: 760px) {
-    :root { --cell-size: 2.2rem; --cell-font: 0.78rem; }
-    .two { grid-template-columns: 1fr; }
-    .wrap { padding: 10px 12px; }
+  @media (max-width:760px){
+    :root{ --cell-size:2.2rem; --cell-font:.78rem; }
+    .two{grid-template-columns:1fr;}
+    .wrap{padding:10px 12px;}
   }
 
   /* ========== 印刷 ========== */
-  @media print {
-    header, .ops { display: none !important; }
-    body { background: #fff; color: #000; }
-    .grid-wrap { box-shadow: none; }
-    .panel { box-shadow: none; }
-    .two { grid-template-columns: 1fr; }
+  @media print{
+    header,.ops,.help{display:none!important;}
+    body{background:#fff;color:#000;}
+    .grid-wrap,.panel{box-shadow:none;}
+    .two{grid-template-columns:1fr;}
   }
-
-  /* --- 使い方（ヘルプ） --- */
-.help { margin: 12px 0 14px; }
-.help details {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 8px 12px;
-}
-.help summary {
-  cursor: pointer;
-  font-weight: 700;
-  outline: none;
-  list-style: none;
-}
-.help summary::-webkit-details-marker { display: none; }
-.help .tips { color: var(--muted); font-size: .95rem; }
-.help kbd {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  border: 1px solid var(--border);
-  border-bottom-width: 2px;
-  border-radius: 6px;
-  padding: 0 6px;
-  font-size: .85rem;
-}
-@media print {
-  .help { display: none !important; } /* 印刷時は非表示 */
-}
 </style>
 </head>
 <body>
 <header>
-  <section class="wrap help" aria-label="使い方">
-  <details id="helpDetails">
-    <summary>使い方（クリックで開閉）</summary>
-    <div class="tips">
-      <p>上部の <b>スタック/ポジション/表示モード</b> を切り替えると、グリッドの色分けが変わります。</p>
-      <ul>
-        <li>モード：<b>オープンレンジ</b> と <b>3bet対応</b>（3bet元を選択）</li>
-        <li>セルをタップ/Enterで：そのハンドの <b>全スタック/全ポジションの状況</b> をポップ表示</li>
-        <li>右パネル：現在のレンジ一覧と <b>「レンジの考え方(メモ)」</b>（保存可）</li>
-        <li>Import/Export：JSONで保存/読込（不正JSONはエラー表示）</li>
-        <li>拡大：<b>拡大</b>ボタンでグリッドを全画面表示</li>
-      </ul>
-
-      <p><b>キーボード操作</b></p>
-      <ul>
-        <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd>：セル移動</li>
-        <li><kbd>Enter</kbd>/<kbd>Space</kbd>：詳細ポップを開く</li>
-        <li><kbd>Esc</kbd>：ポップを閉じる</li>
-      </ul>
-
-      <p><b>色の意味</b></p>
-      <ul>
-        <li>緑：オープン（2BB）</li>
-        <li>灰：3bet来たら降り</li>
-        <li>青：3bet来たらコール</li>
-        <li>赤：3bet来たら4bet jam</li>
-        <li>枠のみ：未定義（=フォールド扱い）</li>
-      </ul>
-
-      <p><b>メモの保存先</b>：ページ内のデータオブジェクト（Exportにも含まれます）</p>
-    </div>
-  </details>
-  </section>
-
   <div class="wrap">
     <div class="row" role="toolbar" aria-label="ヘッダー操作">
       <h1>ポーカートーナメント レンジ可視化</h1>
@@ -275,13 +135,49 @@
         <select id="oppSel" aria-label="3bet元ポジション選択"></select>
       </label>
       <div class="spacer"></div>
+      <label style="display:flex;align-items:center;gap:4px;">
+        <input type="checkbox" id="toggleUndef"> 未定義を薄灰
+      </label>
+      <label style="display:flex;align-items:center;gap:4px;">
+        <input type="checkbox" id="toggleDebug"> デバッグ（値表示）
+      </label>
       <button id="fsBtn" aria-label="フルスクリーン切替">拡大</button>
     </div>
   </div>
 </header>
 
+<section class="wrap help" aria-label="使い方">
+  <details id="helpDetails">
+    <summary>使い方（クリックで開閉）</summary>
+    <div class="tips">
+      <p>上部の <b>スタック/ポジション/表示モード</b> を切り替えると、グリッドの色分けが変わります。</p>
+      <ul>
+        <li>モード：<b>オープンレンジ</b> と <b>3bet対応</b>（3bet元を選択）</li>
+        <li>セルをタップ/Enterで：そのハンドの <b>全スタック/全ポジションの状況</b> をポップ表示</li>
+        <li>右パネル：現在のレンジ一覧と <b>「レンジの考え方(メモ)」</b>（保存可）</li>
+        <li>Import/Export：JSONで保存/読込（不正JSONはエラー表示）</li>
+        <li>拡大：<b>拡大</b>ボタンでグリッドを全画面表示</li>
+      </ul>
+      <p><b>キーボード操作</b></p>
+      <ul>
+        <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd>：セル移動</li>
+        <li><kbd>Enter</kbd>/<kbd>Space</kbd>：詳細ポップを開く</li>
+        <li><kbd>Esc</kbd>：ポップを閉じる</li>
+      </ul>
+      <p><b>色の意味</b></p>
+      <ul>
+        <li>緑：オープン（2BB）</li>
+        <li>灰：3bet来たら降り</li>
+        <li>青：3bet来たらコール</li>
+        <li>赤：3bet来たら4bet jam</li>
+        <li>枠のみ：未定義（=フォールド扱い）</li>
+      </ul>
+      <p><b>メモの保存先</b>：ページ内のデータオブジェクト（Exportにも含まれます）</p>
+    </div>
+  </details>
+</section>
+
 <main class="wrap" id="main">
-  <!-- グリッド -->
   <section class="grid-wrap" id="gridWrap" aria-label="ハンドグリッド">
     <div class="matrix" id="matrix" role="grid" aria-rowcount="14" aria-colcount="14">
       <!-- ヘッダー/セルはJSで一度だけ構築 -->
@@ -290,12 +186,12 @@
       <span class="badge"><span class="dot open" aria-hidden="true"></span>オープン（2BB）</span>
       <span class="badge"><span class="dot fold" aria-hidden="true"></span>3bet来たら降り</span>
       <span class="badge"><span class="dot call" aria-hidden="true"></span>3bet来たらコール</span>
-      <span class="badge"><span class="dot jam" aria-hidden="true"></span>3bet来たら4bet jam</span>
+      <span class="badge"><span class="dot jam"  aria-hidden="true"></span>3bet来たら4bet jam</span>
       <span class="badge"><span class="dot" style="background:none;border-color:var(--border)" aria-hidden="true"></span>未定義=フォールド</span>
     </div>
+    <div id="coverage" class="mono" style="margin-top:6px;color:var(--muted);font-size:.9rem;"></div>
   </section>
 
-  <!-- サマリ & メモ -->
   <section class="two" aria-label="サマリーとメモ">
     <div class="panel">
       <h2>レンジ一覧（現在の表示）</h2>
@@ -315,155 +211,202 @@
   </section>
 </main>
 
-<!-- ポップオーバー -->
 <div class="popover" id="popover" role="dialog" aria-modal="false" aria-live="polite"></div>
 
 <script>
 /* ============================================================
- * 単一ファイル：レンジ可視化（8-max / BBアンティ）
- * - 外部依存なし（CSS/JSともに本ファイル内）
- * - 13x13グリッドを1回だけ構築 → 状態に応じてクラス付け替え
- * - JSON Import/Export、簡易バリデーション、印刷、フルスクリーン、アクセシビリティ
+ * 単一ファイル：レンジ可視化（8-max / BBアンティ / 完全版）
+ * - 内蔵データは「保守的プロファイル v2」を JS で生成（EPタイト/LPルース、KJs@40UTG例外）
+ * - 未定義=fold。UIで未定義薄灰トグル／デバッグ文字／カバレッジ表示を追加
  * ============================================================ */
 
-/* ---------- 初期データ（最小限・保守的） ----------
-   ※ 後からImportで差し替え可能。
-   ・20/30/40BB
-   ・KJs/EPの扱い：
-     20:UTG KJs = openなし(=fold)
-     30:UTG KJs = 境界 → デフォルトopenなし
-     40:UTG KJs = open=1 かつ vs3betはfold寄り
-   ・EPの対SB/BBはAKs/QQ+ jam、AQs/KQsはfold寄り
-*/
-let ranges = {
-  "meta": { "version": 1, "game": "8max_BB_ante", "lastUpdated": new Date().toISOString().slice(0,10) },
-  "stacks": ["20","30","40"],
-  "positions": ["UTG","UTG+1","MP","HJ","CO","BTN","SB","BB"],
-  "actions": ["open","vs3bet_fold","vs3bet_call","vs3bet_jam"],
-  "legend": {
-    "open":"2BBでオープン推奨",
-    "vs3bet_fold":"3bet来たら降り",
-    "vs3bet_call":"3bet来たらコール",
-    "vs3bet_jam":"3bet来たら4bet jam"
-  },
-  "notes": {
-    // メモは key = "<stack>:<pos>" or "<stack>:<pos>:<opp>"
-  },
-  "grid": {
-    // ---- 20BB: UTG（タイト）----
-    "20:UTG": {
-      "AA":{"open":1}, "KK":{"open":1}, "QQ":{"open":1}, "JJ":{"open":1}, "TT":{"open":1},
-      "AKs":{"open":1}, "AQs":{"open":1}, "AJs":{"open":1}, "KQs":{"open":1},
-      // KJs は open なし（=fold）
-      "AKo":{"open":1}, "AQo":{"open":1}
-    },
-    "20:UTG:SB": {
-      "AKs":{"vs3bet_jam":1}, "AA":{"vs3bet_jam":1}, "KK":{"vs3bet_jam":1}, "QQ":{"vs3bet_jam":1}, "JJ":{"vs3bet_jam":1},
-      "AQs":{"vs3bet_fold":1}, "KQs":{"vs3bet_fold":1}, "AKo":{"vs3bet_jam":1}, "AQo":{"vs3bet_fold":1}
-    },
-    "20:UTG:BB": {
-      "AKs":{"vs3bet_jam":1}, "AA":{"vs3bet_jam":1}, "KK":{"vs3bet_jam":1}, "QQ":{"vs3bet_jam":1}, "JJ":{"vs3bet_jam":1},
-      "AQs":{"vs3bet_fold":1}, "KQs":{"vs3bet_fold":1}, "AKo":{"vs3bet_jam":1}, "AQo":{"vs3bet_fold":1}
-    },
+/* ---------- データ生成（完全版 v2 / 保守的） ---------- */
+function generateRanges(){
+  const today = new Date().toISOString().slice(0,10);
+  const stacks = ["20","30","40"];
+  const positions = ["UTG","UTG+1","MP","HJ","CO","BTN","SB","BB"];
+  const actions = ["open","vs3bet_fold","vs3bet_call","vs3bet_jam"];
+  const RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
 
-    // ---- 30BB: UTG（KJs境界→デフォfold）----
-    "30:UTG": {
-      "AA":{"open":1}, "KK":{"open":1}, "QQ":{"open":1}, "JJ":{"open":1},
-      "AKs":{"open":1}, "AQs":{"open":1}, "AJs":{"open":1}, "KQs":{"open":1},
-      "TT":{"open":1}, "AKo":{"open":1}, "AQo":{"open":1}
-      // KJs は open 未定義（=fold）
-    },
-    "30:UTG:SB": {
-      "AKs":{"vs3bet_jam":1}, "AA":{"vs3bet_jam":1}, "KK":{"vs3bet_jam":1}, "QQ":{"vs3bet_jam":1},
-      "JJ":{"vs3bet_jam":1}, "AQs":{"vs3bet_fold":1}, "KQs":{"vs3bet_fold":1}, "AKo":{"vs3bet_jam":1}
-    },
-    "30:UTG:BB": {
-      "AKs":{"vs3bet_jam":1}, "AA":{"vs3bet_jam":1}, "KK":{"vs3bet_jam":1}, "QQ":{"vs3bet_jam":1},
-      "JJ":{"vs3bet_jam":1}, "AQs":{"vs3bet_fold":1}, "KQs":{"vs3bet_fold":1}, "AKo":{"vs3bet_jam":1}
-    },
+  const grid = {};
+  const setOpen = (key, hands)=>{ grid[key] = grid[key] || {}; hands.forEach(h=>{ (grid[key][h] ||= {}).open = 1; }); };
 
-    // ---- 40BB: UTG（KJs openだがvs3betはfold）----
-    "40:UTG": {
-      "AA":{"open":1}, "KK":{"open":1}, "QQ":{"open":1}, "JJ":{"open":1},
-      "TT":{"open":1}, "AKs":{"open":1}, "AQs":{"open":1}, "AJs":{"open":1},
-      "KQs":{"open":1}, "KJs":{"open":1}, "AKo":{"open":1}, "AQo":{"open":1}
-    },
-    "40:UTG:SB": {
-      "AKs":{"vs3bet_jam":1}, "AA":{"vs3bet_jam":1}, "KK":{"vs3bet_jam":1}, "QQ":{"vs3bet_jam":1},
-      "JJ":{"vs3bet_jam":1}, "KJs":{"vs3bet_fold":1}, "KQs":{"vs3bet_fold":1}, "AQs":{"vs3bet_fold":1}, "AKo":{"vs3bet_jam":1}
-    },
-    "40:UTG:BB": {
-      "AKs":{"vs3bet_jam":1}, "AA":{"vs3bet_jam":1}, "KK":{"vs3bet_jam":1}, "QQ":{"vs3bet_jam":1},
-      "JJ":{"vs3bet_jam":1}, "KJs":{"vs3bet_fold":1}, "KQs":{"vs3bet_fold":1}, "AQs":{"vs3bet_fold":1}, "AKo":{"vs3bet_jam":1}
-    },
+  // ---- Open ranges（Pythonで作ったv2ロジックをJSへ移植） ----
+  // 20BB
+  setOpen("20:UTG",["TT","JJ","QQ","KK","AA","AKs","AQs","AJs","KQs","AKo","AQo"]);
+  setOpen("20:UTG+1",["99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","KQs","AKo","AQo","AJo"]);
+  setOpen("20:MP",["99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","KQs","QJs","JTs","AKo","AQo","AJo","KQo"]);
+  setOpen("20:HJ",["88","99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","ATs","KQs","KJs","QJs","JTs","T9s","AKo","AQo","AJo","KQo"]);
+  setOpen("20:CO",["77","88","99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","ATs","A5s","KQs","KJs","QJs","JTs","T9s","98s","AKo","AQo","AJo","KQo","ATo"]);
+  setOpen("20:BTN",[
+    "55","66","77","88","99","TT","JJ","QQ","KK","AA",
+    "A2s","A3s","A4s","A5s","A6s","A7s","A8s","A9s","ATs","AJs","AQs","AKs",
+    "K9s","KTs","KJs","Q9s","QTs","QJs","J9s","JTs","T9s","98s","87s",
+    "A9o","ATo","AJo","AQo","AKo","KTo","QTo","JTo","KJo","KQo","QJo"
+  ]);
+  setOpen("20:SB",[
+    "66","77","88","99","TT","JJ","QQ","KK","AA",
+    "A2s","A3s","A4s","A5s","A6s","A7s","A8s","A9s","ATs","AJs","AQs","AKs",
+    "K9s","KTs","KJs","Q9s","QTs","QJs","J9s","JTs","T9s","98s",
+    "A9o","ATo","AJo","AQo","AKo","KTo","QTo","JTo"
+  ]);
+  // 30BB
+  setOpen("30:UTG",["TT","JJ","QQ","KK","AA","AKs","AQs","AJs","KQs","AKo","AQo"]);
+  setOpen("30:UTG+1",["99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","KQs","ATs","AKo","AQo","AJo"]);
+  setOpen("30:MP",["88","99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","ATs","KQs","KJs","QJs","JTs","T9s","AKo","AQo","AJo","KQo","KJo"]);
+  setOpen("30:HJ",["77","88","99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","ATs","A5s","KQs","KJs","QJs","JTs","T9s","98s","AKo","AQo","AJo","ATo","KQo","KJo","QJo","JTo"]);
+  setOpen("30:CO",[
+    "55","66","77","88","99","TT","JJ","QQ","KK","AA",
+    "A8s","A9s","ATs","AJs","AQs","AKs","A5s",
+    "K9s","KTs","KJs","Q9s","QTs","QJs","J9s","JTs","T9s","98s","87s",
+    "ATo","AJo","AQo","AKo","KJo","KQo","QJo","JTo"
+  ]);
+  setOpen("30:BTN",[
+    "22","33","44","55","66","77","88","99","TT","JJ","QQ","KK","AA",
+    "A2s","A3s","A4s","A5s","A6s","A7s","A8s","A9s","ATs","AJs","AQs","AKs",
+    "K8s","K9s","KTs","KJs","Q8s","Q9s","QTs","QJs","J8s","J9s","JTs",
+    "T8s","T9s","97s","98s","87s","76s","65s",
+    "A8o","A9o","ATo","AJo","AQo","AKo","KTo","QTo","JTo","KJo","KQo","QJo","T9o"
+  ]);
+  setOpen("30:SB",[
+    "55","66","77","88","99","TT","JJ","QQ","KK","AA",
+    "A2s","A3s","A4s","A5s","A6s","A7s","A8s","A9s","ATs","AJs","AQs","AKs",
+    "K8s","K9s","KTs","KJs","Q8s","Q9s","QTs","QJs","J8s","J9s","JTs",
+    "T8s","T9s","97s","98s","87s","76s",
+    "A8o","A9o","ATo","AJo","AQo","AKo","KTo","QTo","JTo","KJo"
+  ]);
+  // 40BB（KJs@UTG open、vs3betは全fold）
+  setOpen("40:UTG",["TT","JJ","QQ","KK","AA","AKs","AQs","AJs","KQs","KJs","AKo","AQo"]);
+  setOpen("40:UTG+1",["99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","ATs","KQs","KJs","AKo","AQo","AJo","KQo"]);
+  setOpen("40:MP",["88","99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","ATs","A9s","KQs","KJs","QJs","JTs","T9s","AKo","AQo","AJo","ATo","KQo","KJo"]);
+  setOpen("40:HJ",["77","88","99","TT","JJ","QQ","KK","AA","AKs","AQs","AJs","ATs","A9s","KQs","KJs","QJs","QTs","JTs","T9s","98s","AKo","AQo","AJo","ATo","KQo","KJo","QJo","JTo"]);
+  setOpen("40:CO",[
+    "66","77","88","99","TT","JJ","QQ","KK","AA",
+    "A2s","A3s","A4s","A5s","A6s","A7s","A8s","A9s","ATs","AJs","AQs","AKs",
+    "K9s","KTs","KJs","Q9s","QTs","QJs","J9s","JTs","T9s","98s","87s","76s",
+    "A9o","ATo","AJo","AQo","AKo","KTo","QTo","JTo","KJo","KQo","QJo"
+  ]);
+  setOpen("40:BTN",[
+    "22","33","44","55","66","77","88","99","TT","JJ","QQ","KK","AA",
+    "A2s","A3s","A4s","A5s","A6s","A7s","A8s","A9s","ATs","AJs","AQs","AKs",
+    "K7s","K8s","K9s","KTs","KJs","Q7s","Q8s","Q9s","QTs","QJs",
+    "J7s","J8s","J9s","JTs","T7s","T8s","T9s","97s","98s","87s","76s","65s","54s",
+    "A7o","A8o","A9o","ATo","AJo","AQo","AKo","KTo","QTo","JTo","KJo","KQo","QJo","T9o","98o"
+  ]);
+  setOpen("40:SB",[
+    "22","33","44","55","66","77","88","99","TT","JJ","QQ","KK","AA",
+    "A2s","A3s","A4s","A5s","A6s","A7s","A8s","A9s","ATs","AJs","AQs","AKs",
+    "K7s","K8s","K9s","KTs","KJs","Q7s","Q8s","Q9s","QTs","QJs",
+    "J7s","J8s","J9s","JTs","T7s","T8s","T9s","97s","98s","87s","76s","65s",
+    "A7o","A8o","A9o","ATo","AJo","AQo","AKo","K9o","KTo","QTo","JTo","KJo"
+  ]);
 
-    // ---- 他ポジ（例：CO/BTNはややルース気味のサンプル。必要最小限）----
-    "30:CO": {
-      "AA":{"open":1},"KK":{"open":1},"QQ":{"open":1},"JJ":{"open":1},"TT":{"open":1},"99":{"open":1},"88":{"open":1},
-      "AKs":{"open":1},"AQs":{"open":1},"AJs":{"open":1},"ATs":{"open":1},"KQs":{"open":1},"KJs":{"open":1},"QJs":{"open":1},"JTs":{"open":1},"T9s":{"open":1},
-      "AKo":{"open":1},"AQo":{"open":1},"AJo":{"open":1},"KQo":{"open":1}
-    },
-    "40:CO": {
-      "77":{"open":1},"66":{"open":1},
-      "A9s":{"open":1},"KTs":{"open":1},"QTs":{"open":1},"J9s":{"open":1},"98s":{"open":1},"87s":{"open":1},
-      "ATo":{"open":1}
-    },
-    "30:BTN": {
-      "55":{"open":1},"44":{"open":1},"33":{"open":1},"22":{"open":1},
-      "A8s":{"open":1},"A5s":{"open":1},"KTs":{"open":1},"K9s":{"open":1},"QTs":{"open":1},"JTs":{"open":1},"T9s":{"open":1},"97s":{"open":1},
-      "A9o":{"open":1},"KJo":{"open":1},"QJo":{"open":1},"T8s":{"open":1}
-    },
-    "20:SB": {  // SBは完成度控えめサンプル（後で更新前提）
-      "AA":{"open":1},"KK":{"open":1},"QQ":{"open":1},"JJ":{"open":1},"TT":{"open":1},"99":{"open":1},
-      "AKs":{"open":1},"AQs":{"open":1},"AJs":{"open":1},"KQs":{"open":1},
-      "AKo":{"open":1},"AQo":{"open":1}
+  // ---- vs3bet 反応（v2: 位置/IP/スタック別にコールを細かめに、他はfold。AA/KK/AKs/AKoは常時jam、OOPのQQ/JJもjam寄せ） ----
+  const jamPure = new Set(["AA","KK","AKs","AKo"]);
+
+  const isIP = (hero, opp)=> (opp==="SB" || opp==="BB");
+  const heroGroup = (p)=> (p==="UTG"||p==="UTG+1")?"EP": (p==="MP")?"MP": (p==="HJ")?"HJ": (p==="CO")?"CO": (p==="BTN")?"BTN": (p==="SB")?"SB":"OTHER";
+
+  function callSet(stack, hero, opp){
+    const ip = isIP(hero, opp);
+    const g = heroGroup(hero);
+    const S = new Set();
+    if (stack==="20"){
+      if (ip){
+        if (g==="MP"||g==="HJ"){ ["AQs","TT","KQs"].forEach(x=>S.add(x)); }
+        else if (g==="CO"||g==="BTN"){ ["AQs","TT","KQs"].forEach(x=>S.add(x)); }
+      }
+      // OOPは原則コールなし
+    } else if (stack==="30"){
+      if (ip){
+        if (g==="EP"){ ["QQ","JJ","AQs"].forEach(x=>S.add(x)); }
+        else if (g==="MP"||g==="HJ"){ ["QQ","JJ","TT","AQs","KQs"].forEach(x=>S.add(x)); }
+        else if (g==="CO"){ ["QQ","JJ","TT","AQs","AJs","KQs","QJs"].forEach(x=>S.add(x)); }
+        else if (g==="BTN"){ ["QQ","JJ","TT","99","AQs","AJs","KQs","QJs","JTs"].forEach(x=>S.add(x)); }
+      } else {
+        if (g==="EP"){ ["QQ","AQs"].forEach(x=>S.add(x)); }
+        else if (g==="MP"||g==="HJ"){ ["QQ","JJ","AQs"].forEach(x=>S.add(x)); }
+        else if (g==="CO"){ ["QQ","JJ","TT","AQs"].forEach(x=>S.add(x)); }
+        else if (g==="SB" && opp==="BB"){ ["QQ","JJ","TT","AQs","KQs"].forEach(x=>S.add(x)); }
+      }
+    } else if (stack==="40"){
+      if (ip){
+        if (g==="EP"){ ["QQ","JJ","TT","AQs","KQs"].forEach(x=>S.add(x)); }
+        else if (g==="MP"||g==="HJ"){ ["QQ","JJ","TT","99","AQs","AJs","KQs"].forEach(x=>S.add(x)); }
+        else if (g==="CO"){ ["QQ","JJ","TT","99","AQs","AJs","KQs","QJs","JTs"].forEach(x=>S.add(x)); }
+        else if (g==="BTN"){ ["QQ","JJ","TT","99","88","AQs","AJs","ATs","KQs","QJs","JTs","T9s"].forEach(x=>S.add(x)); }
+      } else {
+        if (g==="EP"){ ["QQ","JJ","AQs"].forEach(x=>S.add(x)); }
+        else if (g==="MP"||g==="HJ"){ ["QQ","JJ","TT","AQs"].forEach(x=>S.add(x)); }
+        else if (g==="CO"){ ["QQ","JJ","TT","AQs"].forEach(x=>S.add(x)); }
+        else if (g==="SB" && opp==="BB"){ ["QQ","JJ","TT","99","AQs","AJs","KQs"].forEach(x=>S.add(x)); }
+      }
     }
+    return S;
   }
-};
 
-/* ---------- 定数・ユーティリティ ---------- */
+  function vs3ActionFor(hand, stack, hero, opp){
+    // 40:UTG の KJs は常に fold
+    if (stack==="40" && hero==="UTG" && hand==="KJs") return "vs3bet_fold";
+    const cs = callSet(stack, hero, opp);
+    if (cs.has(hand)) return "vs3bet_call";
+    if (jamPure.has(hand)) return "vs3bet_jam";
+    // OOPではQQ/JJはjam寄せ（コールに混ぜない）
+    if (!isIP(hero,opp) && (hand==="QQ" || hand==="JJ")) return "vs3bet_jam";
+    return "vs3bet_fold";
+  }
+
+  // vs3bet を「open定義のあるハンド」にのみ付与（未定義はUI上fold扱い）
+  positions.forEach(hero=>{
+    stacks.forEach(s=>{
+      const openKey = `${s}:${hero}`;
+      const openMap = grid[openKey] || {};
+      const openHands = Object.keys(openMap);
+      positions.forEach(opp=>{
+        if (opp===hero) return;
+        const key = `${s}:${hero}:${opp}`;
+        grid[key] = {};
+        openHands.forEach(h=>{
+          const act = vs3ActionFor(h, s, hero, opp);
+          grid[key][h] = { [act]: 1 };
+        });
+      });
+    });
+  });
+
+  return {
+    meta: { version:1, game:"8max_BB_ante", lastUpdated: today },
+    stacks, positions, actions,
+    legend: {
+      open:"2BBでオープン推奨",
+      vs3bet_fold:"3bet来たら降り",
+      vs3bet_call:"3bet来たらコール",
+      vs3bet_jam:"3bet来たら4bet jam"
+    },
+    notes: {},
+    grid
+  };
+}
+
+/* ---------- 初期データ ---------- */
+let ranges = generateRanges();
+
+/* ---------- UI状態 ---------- */
 const RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
-const state = {
-  stack: ranges.stacks[0],
-  pos: ranges.positions[0],
-  mode: "open",           // "open" | "vs3bet"
-  opponent: "SB",         // 3bet元
-  focusIndex: 0,          // キーボード移動用
-};
-
+const state = { stack: ranges.stacks[0], pos: ranges.positions[0], mode:"open", opponent:"SB", focusIndex:0 };
 const $ = sel => document.querySelector(sel);
-const el = (tag, props={}, ...children) => {
-  const n = document.createElement(tag);
-  Object.assign(n, props);
-  for (const c of children) n.append(c);
-  return n;
-};
+const el = (tag, props={}, ...children)=>{ const n=document.createElement(tag); Object.assign(n, props); children.forEach(c=>n.append(c)); return n; };
+const handAt = (ri,ci)=>{ const r=RANKS[ri], c=RANKS[ci]; if(ri===ci) return r+r; return (ri<ci)?(r+c+"o"):(c+r+"s"); };
+function getKey(){ return state.mode==="open" ? `${state.stack}:${state.pos}` : `${state.stack}:${state.pos}:${state.opponent}`; }
+function getMemoKey(){ return getKey(); }
 
-const handAt = (ri, ci) => {
-  const r = RANKS[ri], c = RANKS[ci];
-  if (ri === ci) return r + r;                 // ペア
-  return (ri < ci) ? (r+c+"o") : (c+r+"s");   // 上三角=オフスート, 下三角=スーテッド
-};
-
-function getKey() {
-  return state.mode === "open"
-    ? `${state.stack}:${state.pos}`
-    : `${state.stack}:${state.pos}:${state.opponent}`;
-}
-
-function getMemoKey() {
-  return state.mode === "open"
-    ? `${state.stack}:${state.pos}`
-    : `${state.stack}:${state.pos}:${state.opponent}`;
-}
-
-/* 指定ハンドの状態を返す（未定義=fold扱い） */
-function getCellState(hand) {
+/* 指定ハンドの状態（未定義=empty→UIではfold扱い） */
+function getCellState(hand){
   const key = getKey();
   const obj = ranges.grid[key] || {};
-  if (state.mode === "open") {
+  if (state.mode==="open"){
     return obj[hand]?.open ? "open" : "empty";
-  } else {
+  }else{
     if (obj[hand]?.vs3bet_jam)  return "jam";
     if (obj[hand]?.vs3bet_call) return "call";
     if (obj[hand]?.vs3bet_fold) return "fold";
@@ -471,172 +414,127 @@ function getCellState(hand) {
   }
 }
 
-/* 現在の表示レンジを文字列で */
-function listCurrentRange() {
-  const key = getKey();
-  const obj = ranges.grid[key] || {};
+/* 現在表示のレンジ文字列 */
+function listCurrentRange(){
+  const key = getKey(), obj = ranges.grid[key] || {};
   const picks = [];
-  if (state.mode === "open") {
-    for (const [h, a] of Object.entries(obj)) if (a.open) picks.push(h);
-  } else {
-    const map = {vs3bet_jam:"[jam]", vs3bet_call:"[call]", vs3bet_fold:"[fold]"};
-    for (const [h, a] of Object.entries(obj)) {
-      for (const k of ["vs3bet_jam","vs3bet_call","vs3bet_fold"]) {
-        if (a[k]) { picks.push(`${h}${map[k]}`); break; }
+  if (state.mode==="open"){
+    for (const [h,a] of Object.entries(obj)) if (a.open) picks.push(h);
+  }else{
+    const lab = {vs3bet_jam:"[jam]",vs3bet_call:"[call]",vs3bet_fold:"[fold]"};
+    for (const [h,a] of Object.entries(obj)){
+      for (const k of ["vs3bet_jam","vs3bet_call","vs3bet_fold"]){
+        if (a[k]){ picks.push(`${h}${lab[k]}`); break; }
       }
     }
   }
   picks.sort((a,b)=>handSortKey(a).localeCompare(handSortKey(b)));
   return picks.join(", ");
 }
-function handSortKey(s){
-  // 例: "AKs[fold]" → "AKs"
-  const h = s.replace(/\[.*\]$/,"");
-  // 優先: ペア>Axs>AKs>...>offsuit の簡易ソート
-  const rankIdx = r => RANKS.indexOf(r);
-  if (h.length===2) return "0"+rankIdx(h[0]); // ペア
-  const suited = h.endsWith("s") ? "1" : "2";
-  return suited + rankIdx(h[0])+rankIdx(h[1]);
-}
+function handSortKey(s){ const h=s.replace(/\[.*\]$/,""); const idx=r=>RANKS.indexOf(r); if(h.length===2) return "0"+idx(h[0]); return (h.endsWith("s")?"1":"2")+idx(h[0])+idx(h[1]); }
 
-/* ---------- DOM構築（1回） ---------- */
+/* ---------- マトリクス構築（1回だけ） ---------- */
 const matrix = $("#matrix");
 (function buildMatrix(){
-  // 左上コーナー
-  matrix.append(el("div",{className:"corner", "aria-hidden":"true"},""));
-  // 上ヘッダー
-  for (let c=0;c<13;c++){
-    const label = el("div",{className:"hdr", role:"columnheader","aria-colindex":(c+2)}, RANKS[c]);
-    matrix.append(label);
-  }
-  // 行ごと
-  for (let r=0;r<13;r++){
-    // 行ヘッダ
-    const rowHdr = el("div",{className:"hdr", role:"rowheader","aria-rowindex":(r+2)}, RANKS[r]);
-    matrix.append(rowHdr);
-    for (let c=0;c<13;c++){
+  matrix.append(el("div",{className:"corner","aria-hidden":"true"},""));
+  for(let c=0;c<13;c++) matrix.append(el("div",{className:"hdr",role:"columnheader","aria-colindex":(c+2)},RANKS[c]));
+  for(let r=0;r<13;r++){
+    matrix.append(el("div",{className:"hdr",role:"rowheader","aria-rowindex":(r+2)},RANKS[r]));
+    for(let c=0;c<13;c++){
       const hand = handAt(r,c);
-      const cell = el("div",{
-        className:"cell", tabIndex:0, role:"gridcell",
-        "data-hand": hand, "data-idx": r*13+c,
-        "aria-label": `${hand}（タップで詳細）`
-      }, hand);
-      cell.addEventListener("click", (e)=> openPopover(cell, hand, e));
-      cell.addEventListener("keydown", (e)=>{
-        const idx = parseInt(cell.dataset.idx,10);
-        if (e.key==="Enter" || e.key===" ") { e.preventDefault(); openPopover(cell, hand, e); }
-        else if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)) {
-          e.preventDefault(); moveFocus(idx, e.key);
-        }
+      const cell = el("div",{className:"cell",tabIndex:0,role:"gridcell","data-hand":hand,"data-idx":r*13+c,"aria-label":`${hand}（タップで詳細）`},hand);
+      cell.addEventListener("click",e=>openPopover(cell,hand,e));
+      cell.addEventListener("keydown",e=>{
+        const idx = +cell.dataset.idx;
+        if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openPopover(cell,hand,e); }
+        else if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)){ e.preventDefault(); moveFocus(idx,e.key); }
       });
       matrix.append(cell);
     }
   }
 })();
 
-/* ---------- セレクタ構築 ---------- */
-const stackSel = $("#stackSel");
-const posSel = $("#posSel");
-const oppSel = $("#oppSel");
+/* ---------- セレクタ ---------- */
+const stackSel=$("#stackSel"), posSel=$("#posSel"), oppSel=$("#oppSel");
+ranges.stacks.forEach(s=>stackSel.append(el("option",{value:s},`${s}BB`)));
+ranges.positions.forEach(p=>posSel.append(el("option",{value:p},p)));
+["UTG","UTG+1","MP","HJ","CO","BTN","SB","BB"].forEach(p=>oppSel.append(el("option",{value:p},p)));
 
-ranges.stacks.forEach(s => stackSel.append(el("option",{value:s}, `${s}BB`)));
-ranges.positions.forEach(p => posSel.append(el("option",{value:p}, p)));
-["UTG","UTG+1","MP","HJ","CO","BTN","SB","BB"].forEach(p => oppSel.append(el("option",{value:p}, p)));
+/* ---------- ヘッダー操作 ---------- */
+$("#tabOpen").addEventListener("click",()=>{ state.mode="open"; $("#tabOpen").setAttribute("aria-pressed","true"); $("#tabVs3").setAttribute("aria-pressed","false"); $("#oppWrap").style.display="none"; render(); });
+$("#tabVs3").addEventListener("click",()=>{ state.mode="vs3bet"; $("#tabOpen").setAttribute("aria-pressed","false"); $("#tabVs3").setAttribute("aria-pressed","true"); $("#oppWrap").style.display=""; render(); });
+stackSel.addEventListener("change",e=>{ state.stack=e.target.value; render(); });
+posSel.addEventListener("change",e=>{ state.pos=e.target.value; render(); });
+oppSel.addEventListener("change",e=>{ state.opponent=e.target.value; render(); });
 
-/* ---------- イベント | ヘッダー ---------- */
-$("#tabOpen").addEventListener("click", ()=>{
-  state.mode="open";
-  $("#tabOpen").setAttribute("aria-pressed","true");
-  $("#tabVs3").setAttribute("aria-pressed","false");
-  $("#oppWrap").style.display="none";
-  render();
-});
-$("#tabVs3").addEventListener("click", ()=>{
-  state.mode="vs3bet";
-  $("#tabOpen").setAttribute("aria-pressed","false");
-  $("#tabVs3").setAttribute("aria-pressed","true");
-  $("#oppWrap").style.display="";
-  render();
-});
-stackSel.addEventListener("change", e=>{ state.stack=e.target.value; render(); });
-posSel.addEventListener("change", e=>{ state.pos=e.target.value; render(); });
-oppSel.addEventListener("change", e=>{ state.opponent=e.target.value; render(); });
+/* ---------- 未定義薄灰/デバッグトグル（localStorage 記憶） ---------- */
+(function(){
+  const u=$("#toggleUndef"), d=$("#toggleDebug"); const kU="ui.showUndef", kD="ui.debugVals";
+  try{ const su=localStorage.getItem(kU)==="1"; const sd=localStorage.getItem(kD)==="1"; u.checked=su; d.checked=sd; document.body.classList.toggle("show-undef",su); document.body.classList.toggle("debug-vals",sd); }catch(_){}
+  u.addEventListener("change",()=>{ document.body.classList.toggle("show-undef",u.checked); try{localStorage.setItem(kU,u.checked?"1":"0");}catch(_){}} );
+  d.addEventListener("change",()=>{ document.body.classList.toggle("debug-vals",d.checked); try{localStorage.setItem(kD,d.checked?"1":"0");}catch(_){}} );
+})();
 
-/* ---------- レンダリング（クラス付け替え） ---------- */
+/* ---------- レンダリング ---------- */
+function coverageText(){
+  const key=getKey(), obj=ranges.grid[key]||{};
+  if(state.mode==="open"){
+    const total=169, openCnt=Object.values(obj).filter(v=>v&&v.open===1).length;
+    const pct=(openCnt/169*100).toFixed(1);
+    return `Open: ${openCnt} / ${total}（${pct}%）`;
+  }else{
+    let jam=0,call=0,fold=0;
+    for(const v of Object.values(obj)){ if(!v) continue;
+      if(v.vs3bet_jam===1) jam++; else if(v.vs3bet_call===1) call++; else if(v.vs3bet_fold===1) fold++;
+    }
+    const tot=jam+call+fold, pct=(tot/169*100).toFixed(1);
+    return `vs3bet 反応: jam ${jam}, call ${call}, fold ${fold} ／ 定義済み ${tot}/169（${pct}%）`;
+  }
+}
+
 function render(){
-  // セレクタ値をUIに反映（初期化時にも呼ぶ）
-  stackSel.value = state.stack;
-  posSel.value = state.pos;
-  oppSel.value = state.opponent;
+  stackSel.value=state.stack; posSel.value=state.pos; oppSel.value=state.opponent;
 
-  // 各セルの状態反映
   document.querySelectorAll(".cell").forEach(cell=>{
-    const h = cell.dataset.hand;
-    const st = getCellState(h);
-    // data-state属性で色を管理。未定義は属性外す→薄枠のみ
-    if (st==="empty") cell.removeAttribute("data-state");
+    const h=cell.dataset.hand; const st=getCellState(h);
+    if(st==="empty") cell.removeAttribute("data-state");
     else cell.setAttribute("data-state", st==="open"?"open": st==="fold"?"fold": st==="call"?"call":"jam");
+
+    // デバッグ一文字（open:O / jam:J / call:C / fold:F / 未定義:-）
+    let dbg="-";
+    if(state.mode==="open") dbg = (st==="open")?"O":"-";
+    else dbg = (st==="jam")?"J": (st==="call")?"C": (st==="fold")?"F":"-";
+    cell.dataset.debug = dbg;
   });
 
-  // レンジ一覧
   $("#rangeList").textContent = listCurrentRange();
-
-  // メモ読込
-  const mk = getMemoKey();
-  $("#noteBox").value = ranges.notes?.[mk] || "";
+  $("#coverage").textContent = coverageText();
+  $("#noteBox").value = ranges.notes?.[getMemoKey()] || "";
 }
 render();
 
 /* ---------- フルスクリーン ---------- */
-$("#fsBtn").addEventListener("click", ()=>{
-  const elw = $("#gridWrap");
-  if (!document.fullscreenElement) {
-    (elw.requestFullscreen?.bind(elw) || elw.webkitRequestFullscreen?.bind(elw) || elw.msRequestFullscreen?.bind(elw) || (()=>{}))();
-    $("#fsBtn").textContent = "縮小";
-  } else {
-    (document.exitFullscreen?.bind(document) || document.webkitExitFullscreen?.bind(document) || document.msExitFullscreen?.bind(document) || (()=>{}))();
-    $("#fsBtn").textContent = "拡大";
-  }
+$("#fsBtn").addEventListener("click",()=>{
+  const elw=$("#gridWrap");
+  if(!document.fullscreenElement){ (elw.requestFullscreen?.bind(elw)||elw.webkitRequestFullscreen?.bind(elw)||elw.msRequestFullscreen?.bind(elw)||(()=>{}))(); $("#fsBtn").textContent="縮小"; }
+  else { (document.exitFullscreen?.bind(document)||document.webkitExitFullscreen?.bind(document)||document.msExitFullscreen?.bind(document)||(()=>{}))(); $("#fsBtn").textContent="拡大"; }
 });
 
-/* ---------- ポップオーバー（簡易サマリ） ---------- */
-const pop = $("#popover");
-function openPopover(cell, hand, ev){
-  const rect = cell.getBoundingClientRect();
-  const pad = 8;
-  pop.style.left = Math.min(window.innerWidth - 320, Math.max(8, rect.right + pad)) + "px";
-  pop.style.top  = Math.min(window.innerHeight - 220, rect.top) + "px";
+/* ---------- ポップオーバー ---------- */
+const pop=$("#popover");
+function openPopover(cell,hand,ev){
+  const rect=cell.getBoundingClientRect(), pad=8;
+  pop.style.left = Math.min(window.innerWidth-320, Math.max(8, rect.right+pad))+"px";
+  pop.style.top  = Math.min(window.innerHeight-220, rect.top)+"px";
   pop.innerHTML = buildPopoverHTML(hand);
-  pop.style.display = "block";
+  pop.style.display="block";
 }
-document.addEventListener("click",(e)=>{
-  if (!pop.contains(e.target) && !e.target.closest(".cell")) pop.style.display="none";
-});
+document.addEventListener("click",(e)=>{ if(!pop.contains(e.target) && !e.target.closest(".cell")) pop.style.display="none"; });
 function buildPopoverHTML(hand){
-  // 全スタック/全ポジションの open の有無（簡易）
-  const openLines = [];
-  for (const s of ranges.stacks){
-    for (const p of ranges.positions){
-      const k = `${s}:${p}`;
-      const v = (ranges.grid[k]||{})[hand]?.open ? "open" : "-";
-      if (v==="open") openLines.push(`${s}BB ${p}`);
-    }
-  }
-  // 現在ポジションの各3bet元の反応（簡易）
-  const vsLines = [];
-  for (const opp of ranges.positions){
-    if (opp===state.pos) continue;
-    const k = `${state.stack}:${state.pos}:${opp}`;
-    const o = (ranges.grid[k]||{})[hand] || {};
-    const tag = o.vs3bet_jam ? "jam" : o.vs3bet_call ? "call" : o.vs3bet_fold ? "fold" : "-";
-    if (tag!=="-") vsLines.push(`${opp}: ${tag}`);
-  }
-  const nowKey = getKey();
-  const nowObj = ranges.grid[nowKey]?.[hand] || {};
-  const nowLabel = (state.mode==="open")
-    ? (nowObj.open ? "open" : "未定義=fold")
-    : (nowObj.vs3bet_jam ? "jam" : nowObj.vs3bet_call ? "call" : nowObj.vs3bet_fold ? "fold" : "未定義=fold");
-
+  const openLines=[]; for(const s of ranges.stacks){ for(const p of ranges.positions){ const k=`${s}:${p}`; if((ranges.grid[k]||{})[hand]?.open) openLines.push(`${s}BB ${p}`); } }
+  const vsLines=[]; for(const opp of ranges.positions){ if(opp===state.pos) continue; const k=`${state.stack}:${state.pos}:${opp}`; const o=(ranges.grid[k]||{})[hand]||{}; const tag=o.vs3bet_jam?"jam":o.vs3bet_call?"call":o.vs3bet_fold?"fold":"-"; if(tag!=="-") vsLines.push(`${opp}: ${tag}`); }
+  const nowKey=getKey(), nowObj=ranges.grid[nowKey]?.[hand]||{};
+  const nowLabel=(state.mode==="open") ? (nowObj.open?"open":"未定義=fold") : (nowObj.vs3bet_jam?"jam":nowObj.vs3bet_call?"call":nowObj.vs3bet_fold?"fold":"未定義=fold");
   return `
     <h3>${hand}</h3>
     <div class="small">現在: ${state.stack}BB / ${state.pos} / ${state.mode==="open"?"open":"vs "+state.opponent}</div>
@@ -648,112 +546,63 @@ function buildPopoverHTML(hand){
 }
 
 /* ---------- キーボード移動 ---------- */
-function moveFocus(idx, key){
-  let r = Math.floor(idx/13), c = idx%13;
-  if (key==="ArrowLeft")  c = Math.max(0, c-1);
-  if (key==="ArrowRight") c = Math.min(12, c+1);
-  if (key==="ArrowUp")    r = Math.max(0, r-1);
-  if (key==="ArrowDown")  r = Math.min(12, r+1);
-  const next = r*13+c;
-  const target = document.querySelector(`.cell[data-idx="${next}"]`);
-  if (target) { target.focus(); state.focusIndex = next; }
+function moveFocus(idx,key){
+  let r=Math.floor(idx/13), c=idx%13;
+  if(key==="ArrowLeft") c=Math.max(0,c-1);
+  if(key==="ArrowRight") c=Math.min(12,c+1);
+  if(key==="ArrowUp") r=Math.max(0,r-1);
+  if(key==="ArrowDown") r=Math.min(12,r+1);
+  const next=r*13+c; const target=document.querySelector(`.cell[data-idx="${next}"]`); if(target){ target.focus(); state.focusIndex=next; }
 }
 
 /* ---------- メモ保存 ---------- */
-$("#saveNoteBtn").addEventListener("click", ()=>{
-  const key = getMemoKey();
-  if (!ranges.notes) ranges.notes = {};
-  ranges.notes[key] = $("#noteBox").value || "";
-  notify(`メモ保存: ${key}`);
+$("#saveNoteBtn").addEventListener("click",()=>{
+  const key=getMemoKey(); (ranges.notes ||= {}); ranges.notes[key] = $("#noteBox").value || ""; notify(`メモ保存: ${key}`);
 });
 
 /* ---------- Import / Export ---------- */
-$("#importBtn").addEventListener("click", ()=> $("#importFile").click());
-$("#importFile").addEventListener("change", async (e)=>{
-  const file = e.target.files[0];
-  if (!file) return;
-  try {
-    const text = await file.text();
-    const data = JSON.parse(text);
-    const err = validateSchema(data);
-    if (err.length) {
-      notify("Import失敗: " + err.join("; "));
-      return;
-    }
-    ranges = data;
-    // 差し替え後に安全なstateへ
-    state.stack = ranges.stacks?.[0] || "20";
-    state.pos   = ranges.positions?.[0] || "UTG";
-    state.mode  = "open";
-    state.opponent = (ranges.positions||[])[1] || "UTG+1";
-    render();
-    notify(`Import成功: ${file.name}`);
-  } catch(ex){
-    notify("Importエラー: " + ex.message);
-  } finally {
-    e.target.value = "";
-  }
+$("#importBtn").addEventListener("click",()=>$("#importFile").click());
+$("#importFile").addEventListener("change",async(e)=>{
+  const file=e.target.files[0]; if(!file) return;
+  try{
+    const text=await file.text(); const data=JSON.parse(text); const err=validateSchema(data);
+    if(err.length){ notify("Import失敗: "+err.join("; ")); return; }
+    ranges=data;
+    state.stack=ranges.stacks?.[0]||"20"; state.pos=ranges.positions?.[0]||"UTG"; state.mode="open"; state.opponent=(ranges.positions||[])[1]||"UTG+1";
+    render(); notify(`Import成功: ${file.name}`);
+  }catch(ex){ notify("Importエラー: "+ex.message); }
+  finally{ e.target.value=""; }
+});
+$("#exportBtn").addEventListener("click",()=>{
+  if(ranges.meta) ranges.meta.lastUpdated=new Date().toISOString().slice(0,10);
+  const blob=new Blob([JSON.stringify(ranges,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); const d=new Date(); const ymd=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  a.download=`ranges_${ymd}.json`; a.href=URL.createObjectURL(blob); a.click(); URL.revokeObjectURL(a.href); notify("Export完了");
 });
 
-$("#exportBtn").addEventListener("click", ()=>{
-  // 更新日を今に
-  if (ranges.meta) ranges.meta.lastUpdated = new Date().toISOString().slice(0,10);
-  const blob = new Blob([JSON.stringify(ranges,null,2)], {type:"application/json"});
-  const a = document.createElement("a");
-  const d = new Date();
-  const ymd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-  a.download = `ranges_${ymd}.json`;
-  a.href = URL.createObjectURL(blob);
-  a.click();
-  URL.revokeObjectURL(a.href);
-  notify("Export完了");
-});
-
-/* ---------- 簡易スキーマバリデーション ---------- */
+/* ---------- バリデーション ---------- */
 function validateSchema(obj){
-  const errs = [];
-  const need = ["meta","stacks","positions","actions","legend","grid"];
-  for (const k of need) if (!(k in obj)) errs.push(`必須キー欠落: ${k}`);
-  if (!Array.isArray(obj.stacks)) errs.push("stacksは配列");
-  if (!Array.isArray(obj.positions)) errs.push("positionsは配列");
-  if (!Array.isArray(obj.actions)) errs.push("actionsは配列");
-  if (typeof obj.grid!=="object") errs.push("gridはオブジェクト");
-  // 軽い型チェック
-  if (obj.actions){
-    for (const a of ["open","vs3bet_fold","vs3bet_call","vs3bet_jam"])
-      if (!obj.actions.includes(a)) errs.push(`actionsに不足: ${a}`);
-  }
+  const errs=[]; const need=["meta","stacks","positions","actions","legend","grid"];
+  for(const k of need) if(!(k in obj)) errs.push(`必須キー欠落: ${k}`);
+  if(!Array.isArray(obj.stacks)) errs.push("stacksは配列");
+  if(!Array.isArray(obj.positions)) errs.push("positionsは配列");
+  if(!Array.isArray(obj.actions)) errs.push("actionsは配列");
+  if(typeof obj.grid!=="object") errs.push("gridはオブジェクト");
+  for(const a of ["open","vs3bet_fold","vs3bet_call","vs3bet_jam"]) if(!(obj.actions||[]).includes(a)) errs.push(`actionsに不足: ${a}`);
   return errs;
 }
 
 /* ---------- メッセージ ---------- */
-function notify(text){
-  const m = $("#msg");
-  m.textContent = text;
-  setTimeout(()=>{ if (m.textContent===text) m.textContent=""; }, 4000);
-}
+function notify(text){ const m=$("#msg"); m.textContent=text; setTimeout(()=>{ if(m.textContent===text) m.textContent=""; },4000); }
 
-/* ---------- 初期フォーカス ---------- */
-document.querySelector('.cell[data-idx="0"]').focus();
-
-/* ---------- 補助：タブ/Enterなどでの操作性 ---------- */
-document.addEventListener("keydown",(e)=>{
-  if (e.key==="Escape") pop.style.display="none";
-});
-
-/* --- ヘルプの開閉状態を記憶（localStorage） --- */
-(function(){
-  const d = document.getElementById('helpDetails');
-  if (!d) return;
-  const key = 'help.open';
-  // 復元
-  try { d.open = localStorage.getItem(key) === '1'; } catch(_) {}
-  // 変更を保存
-  d.addEventListener('toggle', ()=>{
-    try { localStorage.setItem(key, d.open ? '1' : '0'); } catch(_) {}
-  });
+/* ---------- ヘルプの開閉状態を記憶 ---------- */
+(function(){ const d=$("#helpDetails"); if(!d) return; const key="help.open"; try{ d.open = localStorage.getItem(key)==="1"; }catch(_){}
+  d.addEventListener("toggle",()=>{ try{ localStorage.setItem(key, d.open?"1":"0"); }catch(_){} });
 })();
 
+/* ---------- 初期フォーカス & Esc ---------- */
+document.querySelector('.cell[data-idx="0"]').focus();
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") $("#popover").style.display="none"; });
 </script>
 </body>
 </html>
