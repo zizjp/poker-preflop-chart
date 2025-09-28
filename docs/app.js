@@ -42,6 +42,15 @@ const defaultRanges = {
     "40:UTG:BB":{ "AA":{"vs3bet_jam":1},"KK":{"vs3bet_jam":1},"QQ":{"vs3bet_jam":1},"JJ":{"vs3bet_jam":1},
       "AKs":{"vs3bet_jam":1},"AKo":{"vs3bet_jam":1},"KJs":{"vs3bet_fold":1},"KQs":{"vs3bet_fold":1},"AQs":{"vs3bet_fold":1} },
 
+    /* —— 20:BTN（保守的だけど20BBはそこそこ広め） —— */
+    "20:BTN": {
+    "55":{open:1},"66":{open:1},"77":{open:1},"88":{open:1},"99":{open:1},"TT":{open:1},"JJ":{open:1},"QQ":{open:1},"KK":{open:1},"AA":{open:1},
+    "A9o":{open:1},"ATo":{open:1},"AJo":{open:1},"AQo":{open:1},"AKo":{open:1},
+    "KTo":{open:1},"QTo":{open:1},"JTo":{open:1},"KJo":{open:1},"KQo":{open:1},"QJo":{open:1},
+    "A2s":{open:1},"A3s":{open:1},"A4s":{open:1},"A5s":{open:1},"A6s":{open:1},"A7s":{open:1},"A8s":{open:1},"A9s":{open:1},"ATs":{open:1},"AJs":{open:1},"AQs":{open:1},"AKs":{open:1},
+    "K9s":{open:1},"KTs":{open:1},"KJs":{open:1},"Q9s":{open:1},"QTs":{open:1},"QJs":{open:1},
+    "J9s":{open:1},"JTs":{open:1},"T9s":{open:1},"98s":{open:1},"87s":{open:1} },
+
     /* —— 例：CO/BTN/SB はややルースのサンプル（最小限） —— */
     "30:CO": { "AA":{open:1},"KK":{open:1},"QQ":{open:1},"JJ":{open:1},"TT":{open:1},"99":{open:1},"88":{open:1},
       "AKs":{open:1},"AQs":{open:1},"AJs":{open:1},"ATs":{open:1},"KQs":{open:1},"KJs":{open:1},"QJs":{open:1},"JTs":{open:1},"T9s":{open:1},
