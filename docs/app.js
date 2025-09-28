@@ -32,6 +32,7 @@
   async function init(){
     buildMatrix();               // 先に盤面を確実に作る
     RANGES = await loadRanges(); // ranges.json → window.RANGES の順で拾う
+    initSelectorsIfEmpty(RANGES);
 
     // 既存UIに合わせて、タブのクリックで MODE をセット
     if (tabOpen) tabOpen.addEventListener("click", () => setMode("open"));
@@ -265,4 +266,44 @@
       ].filter(Boolean).join("\n");
     }
   }
+
+  function initSelectorsIfEmpty(data){
+  if (!data) return;
+  const stacks = (data.stacks && data.stacks.length) ? data.stacks : inferStacks(data.grid);
+  const positions = (data.positions && data.positions.length) ? data.positions : inferPositions(data.grid);
+
+  // stack
+  if (stackSel && stackSel.options.length === 0 && stacks.length){
+    stackSel.innerHTML = stacks.map(v => `<option value="${v}">${v}BB</option>`).join('');
+    if (!stackSel.value) stackSel.value = stacks[0];
+  }
+  // pos
+  if (posSel && posSel.options.length === 0 && positions.length){
+    posSel.innerHTML = positions.map(v => `<option value="${v}">${v}</option>`).join('');
+    if (!posSel.value) posSel.value = positions[0];
+  }
+  // opp（vs3用）
+  if (oppSel && oppSel.options.length === 0 && positions.length){
+    oppSel.innerHTML = positions.map(v => `<option value="${v}">${v}</option>`).join('');
+    if (!oppSel.value) oppSel.value = positions[1] || positions[0];
+  }
+}
+
+function inferStacks(grid){
+  const set = new Set();
+  Object.keys(grid || {}).forEach(k => { const m = k.match(/^(\d+):/); if (m) set.add(m[1]); });
+  return [...set].sort((a,b) => Number(a)-Number(b));
+}
+
+function inferPositions(grid){
+  const set = new Set();
+  Object.keys(grid || {}).forEach(k => {
+    const p = k.split(':');
+    if (p[1]) set.add(p[1]);
+    if (p[2]) set.add(p[2]);
+  });
+  const std = ["UTG","UTG+1","MP","HJ","CO","BTN","SB","BB"];
+  return [...set].sort((a,b) => std.indexOf(a) - std.indexOf(b));
+}
+
 })();
