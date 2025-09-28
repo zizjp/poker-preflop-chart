@@ -44,12 +44,13 @@ const defaultRanges = {
 
     /* —— 20:BTN（保守的だけど20BBはそこそこ広め） —— */
     "20:BTN": {
-    "55":{open:1},"66":{open:1},"77":{open:1},"88":{open:1},"99":{open:1},"TT":{open:1},"JJ":{open:1},"QQ":{open:1},"KK":{open:1},"AA":{open:1},
-    "A9o":{open:1},"ATo":{open:1},"AJo":{open:1},"AQo":{open:1},"AKo":{open:1},
-    "KTo":{open:1},"QTo":{open:1},"JTo":{open:1},"KJo":{open:1},"KQo":{open:1},"QJo":{open:1},
-    "A2s":{open:1},"A3s":{open:1},"A4s":{open:1},"A5s":{open:1},"A6s":{open:1},"A7s":{open:1},"A8s":{open:1},"A9s":{open:1},"ATs":{open:1},"AJs":{open:1},"AQs":{open:1},"AKs":{open:1},
-    "K9s":{open:1},"KTs":{open:1},"KJs":{open:1},"Q9s":{open:1},"QTs":{open:1},"QJs":{open:1},
-    "J9s":{open:1},"JTs":{open:1},"T9s":{open:1},"98s":{open:1},"87s":{open:1} },
+      "55":{open:1},"66":{open:1},"77":{open:1},"88":{open:1},"99":{open:1},"TT":{open:1},"JJ":{open:1},"QQ":{open:1},"KK":{open:1},"AA":{open:1},
+      "A9o":{open:1},"ATo":{open:1},"AJo":{open:1},"AQo":{open:1},"AKo":{open:1},
+      "KTo":{open:1},"QTo":{open:1},"JTo":{open:1},"KJo":{open:1},"KQo":{open:1},"QJo":{open:1},
+      "A2s":{open:1},"A3s":{open:1},"A4s":{open:1},"A5s":{open:1},"A6s":{open:1},"A7s":{open:1},"A8s":{open:1},"A9s":{open:1},"ATs":{open:1},"AJs":{open:1},"AQs":{open:1},"AKs":{open:1},
+      "K9s":{open:1},"KTs":{open:1},"KJs":{open:1},"Q9s":{open:1},"QTs":{open:1},"QJs":{open:1},
+      "J9s":{open:1},"JTs":{open:1},"T9s":{open:1},"98s":{open:1},"87s":{open:1}
+    },
 
     /* —— 例：CO/BTN/SB はややルースのサンプル（最小限） —— */
     "30:CO": { "AA":{open:1},"KK":{open:1},"QQ":{open:1},"JJ":{open:1},"TT":{open:1},"99":{open:1},"88":{open:1},
@@ -67,7 +68,16 @@ const defaultRanges = {
 /* ---------- 便利関数/状態 ---------- */
 const RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
 const $ = sel => document.querySelector(sel);
-const el = (tag, props={}, ...children) => { const n=document.createElement(tag); Object.assign(n, props); children.forEach(c=>n.append(c)); return n; };
+/* 属性の付け方を正しく：role/aria-/data- は setAttribute、それ以外はプロパティ */
+const el = (tag, props={}, ...children) => {
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(props||{})) {
+    if (k.startsWith("aria-") || k.startsWith("data-") || k === "role") n.setAttribute(k, v);
+    else n[k] = v;
+  }
+  for (const c of children) n.append(c);
+  return n;
+};
 
 const state = {
   stack: "20",
@@ -88,8 +98,6 @@ let ranges = structuredClone(defaultRanges);
       const err = validateSchema(data);
       if(!err.length){ ranges = data; }
       else notify("内蔵データで起動（ranges.json検証エラー: "+err.join("; ")+")");
-    }else{
-      // 404等は内蔵
     }
   }catch(_){}
   initUI();
@@ -97,22 +105,34 @@ let ranges = structuredClone(defaultRanges);
 })();
 
 /* ---------- UI構築 ---------- */
-const matrix = $("#matrix");
+const matrixRoot = document.getElementById("matrix") || document.getElementById("grid"); // どちらのIDでも動く
 function buildMatrix(){
-  matrix.append(el("div",{className:"corner","aria-hidden":"true"},""));
-  for(let c=0;c<13;c++) matrix.append(el("div",{className:"hdr",role:"columnheader","aria-colindex":(c+2)}, RANKS[c]));
+  if (!matrixRoot) return;
+  matrixRoot.innerHTML = "";
+  matrixRoot.append(el("div",{className:"corner","aria-hidden":"true"},""));
+  // 列ヘッダ
+  for(let c=0;c<13;c++){
+    matrixRoot.append(el("div",{className:"hdr",role:"columnheader","aria-colindex":(c+2)}, RANKS[c]));
+  }
+  // 行
   for(let r=0;r<13;r++){
-    matrix.append(el("div",{className:"hdr",role:"rowheader","aria-rowindex":(r+2)}, RANKS[r]));
+    matrixRoot.append(el("div",{className:"hdr",role:"rowheader","aria-rowindex":(r+2)}, RANKS[r]));
     for(let c=0;c<13;c++){
       const hand = handAt(r,c);
-      const cell = el("div",{className:"cell",tabIndex:0,role:"gridcell","data-hand":hand,"data-idx":(r*13+c),"aria-label":`${hand}（タップで詳細）`}, hand);
+      const cell = el("div",{
+        className:"cell", tabIndex:0, role:"gridcell",
+        "aria-label":`${hand}（タップで詳細）`
+      }, hand);
+      // ★ data-* は setAttribute / dataset で正しく付与
+      cell.dataset.hand = hand;
+      cell.dataset.idx = String(r*13+c);
       cell.addEventListener("click",(e)=>openPopover(cell, hand, e));
       cell.addEventListener("keydown",(e)=>{
-        const idx = +cell.dataset.idx;
+        const idx = +(cell.dataset.idx||0);
         if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openPopover(cell, hand, e); }
         else if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)){ e.preventDefault(); moveFocus(idx,e.key); }
       });
-      matrix.append(cell);
+      matrixRoot.append(cell);
     }
   }
 }
@@ -144,32 +164,47 @@ function initSelectors(){
     render();
   });
 
-  $("#fsBtn").addEventListener("click", ()=>{
-    const elw=$("#gridWrap");
-    if(!document.fullscreenElement){ (elw.requestFullscreen?.bind(elw)||(()=>{}))(); $("#fsBtn").textContent="縮小"; }
-    else { (document.exitFullscreen?.bind(document)||(()=>{}))(); $("#fsBtn").textContent="拡大"; }
-  });
+  const fsBtn = document.getElementById("fsBtn");
+  if (fsBtn){
+    fsBtn.addEventListener("click", ()=>{
+      const elw=document.getElementById("gridWrap")||matrixRoot;
+      if(!document.fullscreenElement){ (elw.requestFullscreen?.bind(elw)||(()=>{}))(); fsBtn.textContent="縮小"; }
+      else { (document.exitFullscreen?.bind(document)||(()=>{}))(); fsBtn.textContent="拡大"; }
+    });
+  }
 
-  $("#importBtn").addEventListener("click", ()=>$("#importFile").click());
-  $("#importFile").addEventListener("change", onImport);
-  $("#exportBtn").addEventListener("click", onExport);
-  $("#saveNoteBtn").addEventListener("click", onSaveNote);
+  const importBtn = document.getElementById("importBtn");
+  const importFile = document.getElementById("importFile");
+  const exportBtn = document.getElementById("exportBtn");
+  const saveNoteBtn = document.getElementById("saveNoteBtn");
+
+  importBtn?.addEventListener("click", ()=>importFile?.click());
+  importFile?.addEventListener("change", onImport);
+  exportBtn?.addEventListener("click", onExport);
+  saveNoteBtn?.addEventListener("click", onSaveNote);
 
   // ヘルプ開閉記憶
   const d = document.getElementById('helpDetails'); const key='help.open';
-  try{ d.open = localStorage.getItem(key)==='1'; }catch(_){}
-  d.addEventListener('toggle',()=>{ try{ localStorage.setItem(key,d.open?'1':'0'); }catch(_){}});
+  if (d){
+    try{ d.open = localStorage.getItem(key)==='1'; }catch(_){}
+    d.addEventListener('toggle',()=>{ try{ localStorage.setItem(key,d.open?'1':'0'); }catch(_){}});
+  }
 
-  document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") $("#popover").style.display="none"; });
+  document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") $("#popover")?.style.display="none"; });
 }
 function setTabs(activeId){
   for(const id of ["tabOpen","tabVs3","tabOverview"]){
-    document.getElementById(id).setAttribute("aria-pressed", id===activeId ? "true":"false");
+    const b = document.getElementById(id);
+    if (b) b.setAttribute("aria-pressed", id===activeId ? "true":"false");
   }
 }
 
 /* ---------- 共通ユーティリティ ---------- */
-function handAt(ri,ci){ const r=RANKS[ri], c=RANKS[ci]; if(ri===ci) return r+r; return (ri<ci)?(r+c+"o"):(c+r+"s"); }
+function handAt(ri,ci){
+  const r=RANKS[ri], c=RANKS[ci];
+  if(ri===ci) return r+r;                 // ペアは2文字（AA,KK,...）
+  return (ri<ci)?(r+c+"o"):(c+r+"s");     // 上三角=オフスート / 下三角=スーテッド
+}
 function getKey(){ return state.mode==="open" ? `${state.stack}:${state.pos}` : `${state.stack}:${state.pos}:${state.opponent}`; }
 function getMemoKey(){ return state.mode==="open" ? `${state.stack}:${state.pos}` : `${state.stack}:${state.pos}:${state.opponent}`; }
 
@@ -213,17 +248,20 @@ function overviewListByPos(){
 }
 
 /* ---------- DOM構築/初期化 ---------- */
-function initUI(){ buildMatrix(); initSelectors(); document.querySelector('.cell[data-idx="0"]').focus(); }
-buildMatrix = buildMatrix; // keep ref
+function initUI(){ buildMatrix(); initSelectors(); document.querySelector('.cell[data-idx="0"]')?.focus(); }
 
 /* ---------- レンダリング ---------- */
 function render(){
-  $("#stackSel").value=state.stack; $("#posSel").value=state.pos; $("#oppSel").value=state.opponent;
+  const stackSel=$("#stackSel"), posSel=$("#posSel"), oppSel=$("#oppSel");
+  if (stackSel) stackSel.value=state.stack;
+  if (posSel) posSel.value=state.pos;
+  if (oppSel) oppSel.value=state.opponent;
 
-  const legendAction = $("#legendAction"), legendOverview=$("#legendOverview");
+  const legendAction = document.getElementById("legendAction");
+  const legendOverview = document.getElementById("legendOverview");
   const isOverview = state.mode==="overview";
-  legendAction.style.display = isOverview ? "none" : "";
-  legendOverview.style.display = isOverview ? "" : "none";
+  if (legendAction) legendAction.style.display = isOverview ? "none" : "";
+  if (legendOverview) legendOverview.style.display = isOverview ? "" : "none";
 
   document.querySelectorAll(".cell").forEach(cell=>{
     const h = cell.dataset.hand;
@@ -237,17 +275,21 @@ function render(){
     }
   });
 
-  $("#rangeList").textContent = isOverview ? overviewListByPos() : listCurrentRange();
+  const listBox=document.getElementById("rangeList");
+  if (listBox) listBox.textContent = isOverview ? overviewListByPos() : listCurrentRange();
 
-  const mk=getMemoKey(); $("#noteBox").value = ranges.notes?.[mk] || "";
+  const note=document.getElementById("noteBox");
+  const mk=getMemoKey(); if (note) note.value = ranges.notes?.[mk] || "";
 }
 
 /* ---------- ポップオーバー ---------- */
-const pop=$("#popover");
+const pop=document.getElementById("popover") || (()=>{ const d=document.createElement('div'); d.id='popover'; document.body.appendChild(d); return d; })();
 function openPopover(cell, hand){
   const rect=cell.getBoundingClientRect(), pad=8;
+  pop.style.position="fixed";
   pop.style.left = Math.min(window.innerWidth-320, Math.max(8, rect.right+pad))+"px";
   pop.style.top  = Math.min(window.innerHeight-220, rect.top)+"px";
+  pop.className="popover";
   pop.innerHTML = buildPopoverHTML(hand);
   pop.style.display="block";
 }
@@ -293,7 +335,7 @@ function moveFocus(idx,key){
 function onSaveNote(){
   const key = getMemoKey();
   if(!ranges.notes) ranges.notes = {};
-  ranges.notes[key] = $("#noteBox").value || "";
+  ranges.notes[key] = document.getElementById("noteBox")?.value || "";
   notify(`メモ保存: ${key}`);
 }
 async function onImport(e){
@@ -328,8 +370,9 @@ function validateSchema(obj){
   return errs;
 }
 function notify(text){
-  const m=$("#msg"); m.textContent=text; setTimeout(()=>{ if(m.textContent===text) m.textContent=""; }, 4000);
+  const m=document.getElementById("msg"); if(!m) return;
+  m.textContent=text; setTimeout(()=>{ if(m.textContent===text) m.textContent=""; }, 4000);
 }
 
 /* ---------- 初期構築呼び出し ---------- */
-function initUI(){ buildMatrix(); initSelectors(); document.querySelector('.cell[data-idx="0"]').focus(); }
+function initUI(){ buildMatrix(); initSelectors(); document.querySelector('.cell[data-idx="0"]')?.focus(); }
