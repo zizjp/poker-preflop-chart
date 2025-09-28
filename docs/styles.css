@@ -65,10 +65,10 @@ button{ cursor:pointer; }
 .cell:focus-visible{ box-shadow:0 0 0 3px var(--focus); }
 
 /* === アクション別カラーリング === */
-.cell[data-state="open"] { background:var(--c-open); border:2px solid var(--c-open-b); }
-.cell[data-state="vs3bet_fold"] { background:var(--c-fold); border:2px solid var(--c-fold-b); }
-.cell[data-state="vs3bet_call"] { background:var(--c-call); border:2px solid var(--c-call-b); }
-.cell[data-state="vs3bet_jam"]  { background:var(--c-jam);  border:2px solid var(--c-jam-b); }
+.cell[data-state="open"] { background:var(--c-open) !important; border:2px solid var(--c-open-b) !important; }
+.cell[data-state="vs3bet_fold"] { background:var(--c-fold) !important; border:2px solid var(--c-fold-b) !important; }
+.cell[data-state="vs3bet_call"] { background:var(--c-call) !important; border:2px solid var(--c-call-b) !important; }
+.cell[data-state="vs3bet_jam"]  { background:var(--c-jam) !important;  border:2px solid var(--c-jam-b) !important; }
 .cell:not([data-state]):not([data-overview]){ background:var(--c-undef); }
 
 /* === 総覧カラーリング（ポジション別） === */
