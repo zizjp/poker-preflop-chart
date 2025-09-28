@@ -134,3 +134,24 @@ kbd{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; border:1p
   .grid-wrap,.panel{ box-shadow:none; }
   .two{ grid-template-columns:1fr; }
 }
+
+/* 使い方の見出しを中央寄せ + 開閉アイコンを自前で表示 */
+.help summary{
+  display: flex;               /* 中央寄せしやすいようにflex化 */
+  justify-content: center;     /* ← 中央寄せの本体 */
+  align-items: center;
+  gap: 8px;
+  text-align: center;          /* 冗長だが保険 */
+}
+
+/* デフォルトマーカーを消しているので、矢印を自前で追加（任意） */
+.help summary::-webkit-details-marker { display: none; } /* 既に入っていればOK */
+.help summary::after{
+  content: "▶";
+  font-size: 0.9rem;
+  transform: translateY(1px);
+  transition: transform .2s ease;
+}
+.help details[open] summary::after{
+  transform: rotate(90deg) translateY(0);
+}
