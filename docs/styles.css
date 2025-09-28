@@ -20,6 +20,7 @@
   :root{
     --bg:#0b0c10; --fg:#e5e7eb; --muted:#9ca3af;
     --panel:#111318; --border:#1f2937; --focus:#2563eb;
+
     --c-open:#04785733; --c-open-b:#34d399;
     --c-fold:#4b556320; --c-fold-b:#9ca3af;
     --c-call:#1e3a8a33; --c-call-b:#93c5fd;
@@ -29,13 +30,13 @@
     --p-utg:#ff6666; --p-ep:#d8a21f; --p-ljh:#65b312;
     --p-co:#1ba554; --p-btn:#4b94f3; --p-sb:#d866e8; --p-bb:#e05aa7;
     --p-empty:#ffffff12;
+
     --shadow:0 8px 28px rgba(0,0,0,.45);
   }
 }
 *,:before,:after{ box-sizing:border-box; }
-html,body{ height:100%; }
-body{ margin:0; background:var(--bg); color:var(--fg);
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+html,body{ height:100%; margin:0; background:var(--bg); color:var(--fg);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
   line-height:1.45;
 }
 
@@ -44,11 +45,8 @@ header{ position:sticky; top:0; z-index:10; background:var(--bg); border-bottom:
 .wrap{ max-width:1100px; margin:0 auto; padding:12px 16px; }
 .row{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
 h1{ font-size:1.05rem; margin:0 12px 0 0; font-weight:700; }
-
-select,button,textarea{
-  color:var(--fg); background:var(--panel);
-  border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-size:.95rem;
-}
+select,button,textarea{ color:var(--fg); background:var(--panel);
+  border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-size:.95rem; }
 button{ cursor:pointer; }
 .seg{ display:inline-flex; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
 .seg button{ background:transparent; border:none; padding:8px 12px; font-weight:600; }
@@ -64,14 +62,16 @@ button{ cursor:pointer; }
 .hdr{ font-weight:700; }
 .cell{ display:flex; align-items:center; justify-content:center; border:1px dashed var(--border);
   border-radius:8px; font-size:var(--cell-font); user-select:none; outline:none; }
-.cell[data-state="open"]{ background:var(--c-open); border:2px solid var(--c-open-b); }
-.cell[data-state="fold"]{ background:var(--c-fold); border:2px solid var(--c-fold-b); }
-.cell[data-state="call"]{ background:var(--c-call); border:2px solid var(--c-call-b); }
-.cell[data-state="jam"] { background:var(--c-jam);  border:2px solid var(--c-jam-b); }
-.cell:not([data-state]):not([data-overview]){ background:var(--c-undef); } /* 未定義に薄色 */
 .cell:focus-visible{ box-shadow:0 0 0 3px var(--focus); }
 
-/* 総覧カラー（data-overview=ポジション） */
+/* === アクション別カラーリング === */
+.cell[data-state="open"] { background:var(--c-open); border:2px solid var(--c-open-b); }
+.cell[data-state="vs3bet_fold"] { background:var(--c-fold); border:2px solid var(--c-fold-b); }
+.cell[data-state="vs3bet_call"] { background:var(--c-call); border:2px solid var(--c-call-b); }
+.cell[data-state="vs3bet_jam"]  { background:var(--c-jam);  border:2px solid var(--c-jam-b); }
+.cell:not([data-state]):not([data-overview]){ background:var(--c-undef); }
+
+/* === 総覧カラーリング（ポジション別） === */
 .cell[data-overview="UTG"]   { background:color-mix(in srgb,var(--p-utg) 18%, transparent); border:2px solid var(--p-utg); }
 .cell[data-overview="UTG+1"],
 .cell[data-overview="MP"]    { background:color-mix(in srgb,var(--p-ep) 18%, transparent);  border:2px solid var(--p-ep); }
@@ -92,14 +92,15 @@ button{ cursor:pointer; }
 .dot.jam { background:var(--c-jam);  border-color:var(--c-jam-b); }
 .dot.undef{ background:var(--c-undef); border-color:var(--border); }
 
+/* パネルレイアウト */
 .two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .panel{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
   padding:10px; box-shadow:var(--shadow); }
 .panel h2{ margin:0 0 8px; font-size:1rem; }
-.mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; }
+.mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
 .list{ display:block; max-height:140px; overflow:auto; padding:8px; background:rgba(0,0,0,.03);
   border:1px dashed var(--border); border-radius:8px; font-size:.92rem; }
-textarea{ width:100%; min-height:120px; resize:vertical; } /* box-sizing は * に適用済み */
+textarea{ width:100%; min-height:120px; resize:vertical; }
 .ops{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
 .file{ display:none; }
 .msg{ font-size:.9rem; color:var(--muted); margin-top:6px; }
@@ -114,11 +115,16 @@ textarea{ width:100%; min-height:120px; resize:vertical; } /* box-sizing は * �
 
 /* ヘルプ */
 .help{ margin:12px 0 14px; }
-.help details{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:8px 12px; }
-.help summary{ cursor:pointer; font-weight:700; outline:none; list-style:none; }
+.help details{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:8px 12px; }
+.help summary{ display:flex; justify-content:center; align-items:center; gap:8px;
+  cursor:pointer; font-weight:700; outline:none; list-style:none; text-align:center; }
 .help summary::-webkit-details-marker{ display:none; }
+.help summary::after{ content:"▶"; font-size:.9rem; transform:translateY(1px); transition:transform .2s ease; }
+.help details[open] summary::after{ transform:rotate(90deg) translateY(0); }
 .help .tips{ color:var(--muted); font-size:.95rem; }
-kbd{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; border:1px solid var(--border); border-bottom-width:2px; border-radius:6px; padding:0 6px; font-size:.85rem; }
+kbd{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; border:1px solid var(--border);
+  border-bottom-width:2px; border-radius:6px; padding:0 6px; font-size:.85rem; }
 
 /* モバイル最適化 */
 @media (max-width:760px){
@@ -134,27 +140,3 @@ kbd{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; border:1p
   .grid-wrap,.panel{ box-shadow:none; }
   .two{ grid-template-columns:1fr; }
 }
-
-/* 使い方の見出しを中央寄せ + 開閉アイコンを自前で表示 */
-.help summary{
-  display: flex;               /* 中央寄せしやすいようにflex化 */
-  justify-content: center;     /* ← 中央寄せの本体 */
-  align-items: center;
-  gap: 8px;
-  text-align: center;          /* 冗長だが保険 */
-}
-
-/* デフォルトマーカーを消しているので、矢印を自前で追加（任意） */
-.help summary::-webkit-details-marker { display: none; } /* 既に入っていればOK */
-.help summary::after{
-  content: "▶";
-  font-size: 0.9rem;
-  transform: translateY(1px);
-  transition: transform .2s ease;
-}
-.help details[open] summary::after{
-  transform: rotate(90deg) translateY(0);
-}
-
-/* data-state が付いたら常に実線・2px に寄せる（念のための上書き） */
-.cell[data-state] { border-style: solid; border-width: 2px; }
