@@ -1,10 +1,11 @@
-/* app.js — レンジ可視化 修正完全版
+/* app.js — レンジ可視化 修正完全版（Export/Import/メモ 安定）
    - 13×13=169セル＋ヘッダー生成（各セルに data-hand 付与）
    - モード: open / vs3 / overview（総覧は fold色と衝突しない描画）
    - BB専用: BTNオープンへのフラットコール（<stack>:BB:BTN_open の call_open=1 を合成表示）
    - 編集モード（Open）: #editOpenToggle がONのとき、セルクリックで open をトグル
    - Import/Export: #exportBtn/#btnExport / #importBtn/#btnImport / #importFile/#fileImport に自動配線
    - メモ: 文脈（open=stack:pos / vs3=stack:pos:opp / overview=stack:overview）ごとに RANGES.notes に保存
+   - 重要: init() で window.RANGES に代入し、Export は RANGES を優先的に書き出す（undefined対策）
 */
 
 (() => {
@@ -44,8 +45,11 @@
 
   async function init(){
     buildMatrix();
+
+    // ranges.json を読み込み → グローバルへも反映（Exportのundefined対策）
     RANGES = await loadRanges();
-    ensureNotes();                 // notes を必ず用意（memos を見つけたら移行）
+    window.RANGES = RANGES;
+    ensureNotes();                 // notes を必ず用意（memosがあれば移行）
     initSelectorsIfEmpty(RANGES);  // セレクタが空なら推定で埋める
 
     // タブ
@@ -409,7 +413,10 @@
   // ---- Export（ダウンロード） / Import（ファイル）
   function doExportDownload(){
     try {
-      const blob = new Blob([JSON.stringify(window.RANGES, null, 2)], {type:"application/json"});
+      // RANGES を優先。fallbackで window.RANGES。最悪でも空ひな形で undefined を回避
+      const data = RANGES ?? window.RANGES ?? { stacks:[], positions:[], grid:{}, notes:{} };
+      const text = JSON.stringify(data, null, 2);
+      const blob = new Blob([text], {type:"application/json"});
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "ranges.export.json";
@@ -427,7 +434,7 @@
       const text = await f.text();
       const json = JSON.parse(text);
       window.RANGES = RANGES = json;
-      ensureNotes(); // 互換吸収
+      ensureNotes(); // 互換吸収（memos→notes）
       initSelectorsIfEmpty(RANGES);
       render();
       if (memoEl) loadNoteIntoUI(currentNoteKey());
@@ -457,7 +464,10 @@
     };
     // IO（DOMボタンが無い場合にどうぞ）
     window.RangeIO = {
-      export: (pretty=true) => JSON.stringify(window.RANGES, null, pretty?2:0),
+      export: (pretty=true) => {
+        const data = RANGES ?? window.RANGES ?? {};
+        return JSON.stringify(data, null, pretty ? 2 : 0);
+      },
       import: (jsonObj) => {
         window.RANGES = RANGES = jsonObj;
         ensureNotes();
